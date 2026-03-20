@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}PlanAIr — Smart Productivity Planner{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-content">
+        <h1 class="hero-title">Plan smarter.<br>Work better.</h1>
+        <p class="hero-subtitle">
+            PlanAIr uses intelligent scheduling to organize your tasks,
+            respect your time, and help you focus on what actually matters.
+        </p>
+        <div class="hero-actions">
+            <a href="{{ url_for('auth.signup') }}" class="btn btn-primary">Get started free</a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline">Log in</a>
+        </div>
+    </div>
+</section>
+
+<section class="features">
+    <div class="feature-card">
+        <h3>Eisenhower Matrix</h3>
+        <p>Automatically prioritize tasks by urgency and importance.</p>
+    </div>
+    <div class="feature-card">
+        <h3>Smart Scheduling</h3>
+        <p>Tasks are split across your free hours — never your busy ones.</p>
+    </div>
+    <div class="feature-card">
+        <h3>Mood-Aware Planning</h3>
+        <p>Feeling low? PlanAIr adjusts your workload automatically.</p>
+    </div>
+    <div class="feature-card">
+        <h3>Productivity Insights</h3>
+        <p>Understand your patterns and most productive hours.</p>
+    </div>
+</section>
+{% endblock %}

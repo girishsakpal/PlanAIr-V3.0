@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Sign Up — PlanAIr{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>Create your account</h2>
+        <p class="auth-subtitle">Start planning intelligently.</p>
+
+        <form method="POST" action="{{ url_for('auth.signup') }}" novalidate>
+            {{ form.hidden_tag() }}
+
+            <div class="form-group">
+                {{ form.username.label }}
+                {{ form.username(class="form-input", placeholder="e.g. john_doe") }}
+                {% for error in form.username.errors %}
+                    <span class="form-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.email.label }}
+                {{ form.email(class="form-input", placeholder="you@example.com") }}
+                {% for error in form.email.errors %}
+                    <span class="form-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.password.label }}
+                {{ form.password(class="form-input", placeholder="Min. 8 characters") }}
+                {% for error in form.password.errors %}
+                    <span class="form-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.confirm_password.label }}
+                {{ form.confirm_password(class="form-input", placeholder="Repeat password") }}
+                {% for error in form.confirm_password.errors %}
+                    <span class="form-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group form-group--checkbox">
+                {{ form.terms(class="form-checkbox") }}
+                <label for="terms">
+                    I agree to the <a href="#" class="link">Terms &amp; Conditions</a>
+                </label>
+                {% for error in form.terms.errors %}
+                    <span class="form-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+        </form>
+
+        <p class="auth-footer">
+            Already have an account?
+            <a href="{{ url_for('auth.login') }}" class="link">Log in</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
