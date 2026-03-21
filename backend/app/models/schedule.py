@@ -16,7 +16,9 @@ class ScheduleSession(db.Model):
     session_label = db.Column(db.String(60), nullable=True)
     is_completed  = db.Column(db.Boolean, default=False)
     completed_at  = db.Column(db.DateTime, nullable=True)
+    logged_hours  = db.Column(db.Float, nullable=True)   
 
+    
 class BusyHours(db.Model):
     __tablename__ = 'busy_hours'
     id          = db.Column(db.Integer, primary_key=True)

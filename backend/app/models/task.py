@@ -20,6 +20,7 @@ class Task(db.Model):
     status          = db.Column(db.String(20), default='pending')
     quadrant        = db.Column(db.String(30), nullable=True)
     created_at      = db.Column(db.DateTime, default=datetime.utcnow)
+    completed_hours = db.Column(db.Float, default=0.0)
 
     sessions    = db.relationship('ScheduleSession', backref='task', lazy=True)
     suggestions = db.relationship('Suggestion', backref='task', lazy=True)

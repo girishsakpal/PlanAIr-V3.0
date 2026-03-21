@@ -2,10 +2,35 @@
 {% block title %}Dashboard — PlanAIr{% endblock %}
 
 {% block content %}
+
+<!-- suggestions banner -->
+{% if suggestions %}
+<div class="suggestions-list">
+    {% for s in suggestions %}
+    <div class="suggestion-card suggestion-{{ s.suggestion_type }}" id="sug-{{ s.id }}">
+        <div class="suggestion-icon">
+            {% if s.suggestion_type == 'reschedule' %}&#9888;
+            {% elif s.suggestion_type == 'reduce_load' %}&#9203;
+            {% elif s.suggestion_type == 'focus_reminder' %}&#128270;
+            {% elif s.suggestion_type == 'low_mood' %}&#128149;
+            {% elif s.suggestion_type == 'streak' %}&#128293;
+            {% else %}&#128161;{% endif %}
+        </div>
+        <span class="suggestion-text">{{ s.message }}</span>
+        <button class="suggestion-dismiss" onclick="dismissSuggestion({{ s.id }})" title="Dismiss">&times;</button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- top row: greeting + actions -->
 <div class="dashboard-header">
     <div>
         <h2>Good to see you, {{ current_user.username }}</h2>
-        <p class="text-muted">{{ tasks | length }} task{{ 's' if tasks | length != 1 }} in your planner</p>
+        <p class="text-muted">
+            {{ tasks | length }} task{{ 's' if tasks | length != 1 }}
+            {% if streak > 0 %} · {{ streak }} day streak 🔥{% endif %}
+        </p>
     </div>
     <div style="display:flex; gap:0.75rem; align-items:center;">
         <form method="POST" action="{{ url_for('schedule.generate_schedule') }}">
@@ -18,68 +43,138 @@
     </div>
 </div>
 
-<!-- quick stats -->
-<div class="stats-row">
-    <div class="stat-card">
-        <span class="stat-number">{{ tasks | selectattr('status', 'eq', 'done') | list | length }}</span>
-        <span class="stat-label">Completed</span>
+<!-- mood + productivity row -->
+<div class="mood-productivity-row">
+
+    <!-- mood check-in -->
+    <div class="card mood-card">
+        <div class="card-label">How are you feeling today?</div>
+        <div class="mood-selector">
+            {% for score, emoji, label in [
+            (1, '😞', 'Rough'),
+            (2, '😕', 'Low'),
+            (3, '😐', 'Okay'),
+            (4, '🙂', 'Good'),
+            (5, '😄', 'Great')
+            ] %}
+            <button class="mood-btn {% if mood and mood.mood_score == score %}mood-btn--active{% endif %}"
+                onclick="logMood({{ score }})" title="{{ label }}">
+                {{ emoji }}
+                <span>{{ label }}</span>
+            </button>
+            {% endfor %}
+        </div>
     </div>
-    <div class="stat-card">
-        <span class="stat-number">{{ tasks | selectattr('status', 'eq', 'pending') | list | length }}</span>
-        <span class="stat-label">Pending</span>
+
+    <!-- productivity score -->
+    <div class="card productivity-card">
+        <div class="card-label">Today's productivity</div>
+        {% if productivity %}
+        <div class="score-circle">
+            <svg viewBox="0 0 36 36" class="score-svg">
+                <path class="score-bg"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="score-fill" stroke-dasharray="{{ productivity.score }}, 100"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <text x="18" y="20.35" class="score-text">{{ productivity.score | int }}%</text>
+            </svg>
+        </div>
+        <div class="score-detail text-muted text-sm">
+            {{ productivity.sessions_completed }}/{{ productivity.sessions_total }} sessions done
+        </div>
+        {% else %}
+        <p class="text-muted text-sm" style="margin-top:0.5rem">
+            Complete sessions to see your score.
+        </p>
+        {% endif %}
     </div>
-    <div class="stat-card">
-        <span class="stat-number">{{ tasks | selectattr('status', 'eq', 'delayed') | list | length }}</span>
-        <span class="stat-label">Delayed</span>
-    </div>
-    <div class="stat-card">
-        <span class="stat-number">{{ tasks | selectattr('quadrant', 'eq', 'do_now') | list | length }}</span>
-        <span class="stat-label">Urgent &amp; Important</span>
+
+    <!-- today's stats -->
+    <div class="stats-row stats-compact">
+        <div class="stat-card">
+            <span class="stat-number">{{ tasks | selectattr('status', 'eq', 'done') | list | length }}</span>
+            <span class="stat-label">Done</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ tasks | selectattr('status', 'eq', 'pending') | list | length }}</span>
+            <span class="stat-label">Pending</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ tasks | selectattr('status', 'eq', 'delayed') | list | length }}</span>
+            <span class="stat-label">Delayed</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ streak }}</span>
+            <span class="stat-label">Day streak</span>
+        </div>
     </div>
 </div>
+
+<!-- today's sessions mini timeline -->
+{% if sessions %}
+<div class="section-header">
+    <h3>Today's sessions</h3>
+    <a href="{{ url_for('schedule.schedule_view') }}" class="link text-sm">Full view →</a>
+</div>
+<div class="mini-timeline">
+    {% for item in sessions %}
+    {% set s = item.session %}
+    {% set t = item.task %}
+    <div class="mini-session {% if s.is_completed %}mini-session--done{% endif %}" id="mini-{{ s.id }}">
+        <label class="checkbox-wrap">
+            <input type="checkbox" class="session-checkbox" data-session-id="{{ s.id }}" {% if s.is_completed
+                %}checked{% endif %}>
+            <span class="checkmark"></span>
+        </label>
+        <div class="mini-session-info">
+            <span class="mini-session-title">{{ t.title if t else 'Unknown' }}</span>
+            <span class="text-muted text-sm">
+                {{ s.start_time.strftime('%H:%M') }} – {{ s.end_time.strftime('%H:%M') }}
+            </span>
+        </div>
+        {% if t %}
+        <span class="badge badge-{{ t.quadrant }}">
+            {{ t.quadrant | replace('_', ' ') | title }}
+        </span>
+        {% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
 
 <!-- eisenhower matrix -->
-<div class="section-header">
+<div class="section-header" style="margin-top:2rem">
     <h3>Eisenhower Matrix</h3>
-    <a href="{{ url_for('tasks.matrix') }}" class="link text-sm">Full view</a>
+    <a href="{{ url_for('tasks.matrix') }}" class="link text-sm">Full view →</a>
 </div>
-
 <div class="matrix-grid">
     <div class="matrix-cell matrix-do-now">
         <div class="matrix-label">Urgent + Important</div>
         <div class="matrix-sublabel">Do now</div>
         {% for task in quadrants.do_now %}
         <div class="matrix-task">{{ task.title }}</div>
-        {% else %}
-        <p class="matrix-empty">No tasks here</p>
-        {% endfor %}
+        {% else %}<p class="matrix-empty">No tasks here</p>{% endfor %}
     </div>
     <div class="matrix-cell matrix-schedule">
         <div class="matrix-label">Important, Not Urgent</div>
         <div class="matrix-sublabel">Schedule</div>
         {% for task in quadrants.schedule %}
         <div class="matrix-task">{{ task.title }}</div>
-        {% else %}
-        <p class="matrix-empty">No tasks here</p>
-        {% endfor %}
+        {% else %}<p class="matrix-empty">No tasks here</p>{% endfor %}
     </div>
     <div class="matrix-cell matrix-delegate">
         <div class="matrix-label">Urgent, Not Important</div>
         <div class="matrix-sublabel">Delegate</div>
         {% for task in quadrants.delegate %}
         <div class="matrix-task">{{ task.title }}</div>
-        {% else %}
-        <p class="matrix-empty">No tasks here</p>
-        {% endfor %}
+        {% else %}<p class="matrix-empty">No tasks here</p>{% endfor %}
     </div>
     <div class="matrix-cell matrix-avoid">
         <div class="matrix-label">Not Urgent, Not Important</div>
         <div class="matrix-sublabel">Avoid</div>
         {% for task in quadrants.avoid %}
         <div class="matrix-task">{{ task.title }}</div>
-        {% else %}
-        <p class="matrix-empty">No tasks here</p>
-        {% endfor %}
+        {% else %}<p class="matrix-empty">No tasks here</p>{% endfor %}
     </div>
 </div>
 
@@ -87,29 +182,66 @@
 <div class="section-header" style="margin-top:2rem">
     <h3>All Tasks</h3>
 </div>
-
 {% if tasks %}
 <div class="task-list">
     {% for task in tasks %}
-    <div class="task-card status-{{ task.status }}">
+    {% set prog = task_progress[task.id] %}
+    <div class="task-card status-{{ task.status }}" id="task-card-{{ task.id }}">
         <div class="task-card-left">
-            <div class="task-title">{{ task.title }}</div>
+            <div class="task-title {% if task.status == 'done' %}task-done{% endif %}">
+                {{ task.title }}
+            </div>
+
             <div class="task-meta">
-                <span class="badge badge-{{ task.quadrant }}">{{ task.quadrant | replace('_', ' ') | title }}</span>
-                <span class="text-muted text-sm">{{ task.estimated_hours }}h estimated</span>
+                <span class="badge badge-{{ task.quadrant }}">
+                    {{ task.quadrant | replace('_', ' ') | title }}
+                </span>
+                <span class="text-muted text-sm">{{ task.estimated_hours }}h total</span>
                 {% if task.deadline %}
-                <span class="text-muted text-sm">Due {{ task.deadline.strftime('%d %b %Y') }}</span>
+                <span class="text-muted text-sm">
+                    Due {{ task.deadline.strftime('%d %b %Y') }}
+                </span>
                 {% endif %}
             </div>
+
+            <!-- progress bar -->
+            <div class="task-progress-wrap" id="progress-wrap-{{ task.id }}">
+                <div class="task-progress-bar-bg">
+                    <div class="task-progress-bar
+                                {% if task.status == 'done' %}task-progress-done{% endif %}"
+                        id="progress-bar-{{ task.id }}" style="width: {{ prog.pct }}%">
+                    </div>
+                </div>
+                <span class="task-progress-label" id="progress-label-{{ task.id }}">
+                    {% if task.status == 'done' %}
+                    Completed
+                    {% else %}
+                    {{ prog.completed_hours }}h / {{ prog.estimated_hours }}h
+                    ({{ prog.pct }}%)
+                    {% endif %}
+                </span>
+            </div>
         </div>
+
         <div class="task-card-right">
+            {% if task.status != 'done' %}
             <select class="status-select" onchange="updateStatus({{ task.id }}, this.value)">
-                <option value="pending" {% if task.status=='pending' %}selected{% endif %}>Pending</option>
-                <option value="in-progress" {% if task.status=='in-progress' %}selected{% endif %}>In Progress</option>
-                <option value="done" {% if task.status=='done' %}selected{% endif %}>Done</option>
-                <option value="delayed" {% if task.status=='delayed' %}selected{% endif %}>Delayed</option>
+                <option value="pending" {% if task.status=='pending' %}selected{% endif %}>
+                    Pending
+                </option>
+                <option value="in-progress" {% if task.status=='in-progress' %}selected{% endif %}>
+                    In Progress
+                </option>
+                <option value="delayed" {% if task.status=='delayed' %}selected{% endif %}>
+                    Delayed
+                </option>
             </select>
+            {% else %}
+            <span class="badge-done-pill">Done</span>
+            {% endif %}
+
             <a href="{{ url_for('tasks.edit_task', task_id=task.id) }}" class="btn btn-outline btn-sm">Edit</a>
+
             <form method="POST" action="{{ url_for('tasks.delete_task', task_id=task.id) }}"
                 onsubmit="return confirm('Delete this task?')">
                 {{ form.hidden_tag() }}
@@ -134,14 +266,13 @@
         </div>
         <form method="POST" action="{{ url_for('tasks.add_task') }}" novalidate>
             {{ form.hidden_tag() }}
-
             <div class="form-group">
                 {{ form.title.label }}
                 {{ form.title(class="form-input", placeholder="e.g. Finish project report") }}
             </div>
             <div class="form-group">
                 {{ form.description.label }}
-                {{ form.description(class="form-input form-textarea", rows=3, placeholder="Optional details...") }}
+                {{ form.description(class="form-input form-textarea", rows=3) }}
             </div>
             <div class="form-row">
                 <div class="form-group">
@@ -171,13 +302,11 @@
                 {{ form.recurrence_type.label }}
                 {{ form.recurrence_type(class="form-input form-select") }}
             </div>
-
-            <button type="submit" class="btn btn-primary btn-full" style="margin-top:1rem">
-                Add Task
-            </button>
+            <button type="submit" class="btn btn-primary btn-full" style="margin-top:1rem">Add Task</button>
         </form>
     </div>
 </div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -186,7 +315,8 @@
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
     document.getElementById('is_recurring').addEventListener('change', function () {
-        document.getElementById('recurrence-group').style.display = this.checked ? 'block' : 'none';
+        document.getElementById('recurrence-group').style.display =
+            this.checked ? 'block' : 'none';
     });
 
     function updateStatus(taskId, status) {
@@ -199,5 +329,91 @@
             body: JSON.stringify({ status })
         });
     }
+
+    function logMood(score) {
+        fetch('/mood', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({ mood_score: score })
+        })
+            .then(r => r.json())
+            .then(() => {
+                // update active button highlight
+                document.querySelectorAll('.mood-btn').forEach((btn, i) => {
+                    btn.classList.toggle('mood-btn--active', i + 1 === score);
+                });
+                // regenerate schedule to reflect new mood
+                fetch('/schedule/generate', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCSRFToken() }
+                });
+            });
+    }
+
+    function dismissSuggestion(id) {
+        fetch(`/suggestions/dismiss/${id}`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRFToken() }
+        })
+            .then(() => {
+                const el = document.getElementById(`sug-${id}`);
+                el.style.opacity = '0';
+                setTimeout(() => el.remove(), 300);
+            });
+    }
+
+    document.querySelectorAll('.session-checkbox').forEach(cb => {
+        cb.addEventListener('change', function () {
+            const sessionId = this.dataset.sessionId;
+
+            fetch(`/schedule/session/${sessionId}/toggle`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCSRFToken() }
+            })
+                .then(r => r.json())
+                .then(data => {
+                    // update mini timeline card
+                    const miniCard = document.getElementById(`mini-${sessionId}`);
+                    if (miniCard) {
+                        miniCard.classList.toggle('mini-session--done', data.is_completed);
+                    }
+
+                    // update task progress bar
+                    const taskId = data.task_id;
+                    const bar = document.getElementById(`progress-bar-${taskId}`);
+                    const label = document.getElementById(`progress-label-${taskId}`);
+                    const taskCard = document.getElementById(`task-card-${taskId}`);
+                    const taskTitle = taskCard ? taskCard.querySelector('.task-title') : null;
+
+                    if (bar) {
+                        bar.style.width = data.progress_pct + '%';
+                    }
+
+                    if (label) {
+                        if (data.task_status === 'done') {
+                            label.textContent = 'Completed';
+                        } else {
+                            label.textContent =
+                                `${data.completed_hours}h / ${data.estimated_hours}h` +
+                                ` (${data.progress_pct}%)`;
+                        }
+                    }
+
+                    // auto strikethrough when task is done
+                    if (data.task_status === 'done') {
+                        if (bar) bar.classList.add('task-progress-done');
+                        if (taskTitle) taskTitle.classList.add('task-done');
+                        if (taskCard) taskCard.classList.add('status-done');
+                    } else {
+                        if (bar) bar.classList.remove('task-progress-done');
+                        if (taskTitle) taskTitle.classList.remove('task-done');
+                        if (taskCard) taskCard.classList.remove('status-done');
+                    }
+                });
+        });
+    });
 </script>
 {% endblock %}

@@ -4,7 +4,12 @@ from flask_login import login_required, current_user
 from app import db
 from app.models.task import Task
 from app.forms import TaskForm
-from datetime import datetime
+from datetime import datetime, date
+from app.models.mood import MoodLog, ProductivityLog
+from app.productivity import calculate_daily_score, get_streak
+from app.suggestions import get_active_suggestions, run_suggestion_engine
+from app.models.schedule import ScheduleSession
+
 
 tasks_bp = Blueprint('tasks', __name__)
 
@@ -12,11 +17,11 @@ tasks_bp = Blueprint('tasks', __name__)
 @tasks_bp.route('/dashboard')
 @login_required
 def dashboard():
+    today = date.today()
     tasks = Task.query.filter_by(
         user_id=current_user.id
     ).order_by(Task.created_at.desc()).all()
 
-    # group by quadrant for matrix view
     quadrants = {
         'do_now':   [t for t in tasks if t.quadrant == 'do_now'],
         'schedule': [t for t in tasks if t.quadrant == 'schedule'],
@@ -24,11 +29,70 @@ def dashboard():
         'avoid':    [t for t in tasks if t.quadrant == 'avoid'],
     }
 
+    # today's productivity
+    productivity = ProductivityLog.query.filter_by(
+        user_id=current_user.id,
+        date=today
+    ).first()
+
+    # today's mood
+    mood = MoodLog.query.filter_by(
+        user_id=current_user.id,
+        date=today
+    ).first()
+
+    # streak
+    streak = get_streak(current_user.id)
+
+    # active suggestions
+    suggestions = get_active_suggestions(current_user.id)
+
+    # today's sessions
+    
+    today_sessions = ScheduleSession.query.filter_by(
+        user_id=current_user.id,
+        date=today
+    ).order_by(ScheduleSession.start_time).all()
+
+    sessions_with_tasks = []
+    for s in today_sessions:
+        t = Task.query.get(s.task_id)
+        if t:
+            progress_pct = round(
+                (t.completed_hours / t.estimated_hours) * 100, 1
+            ) if t.estimated_hours > 0 else 0
+        else:
+            progress_pct = 0
+        sessions_with_tasks.append({
+            'session':      s,
+            'task':         t,
+            'progress_pct': progress_pct
+        })
+
+    # build progress map for all tasks
+    task_progress = {}
+    for t in tasks:
+        pct = round(
+            (t.completed_hours / t.estimated_hours) * 100, 1
+        ) if t.estimated_hours > 0 else 0
+        task_progress[t.id] = {
+            'completed_hours': t.completed_hours or 0,
+            'estimated_hours': t.estimated_hours,
+            'pct':             pct
+        }
+
     form = TaskForm()
     return render_template('tasks/dashboard.html',
-                           tasks=tasks,
-                           quadrants=quadrants,
-                           form=form)
+                        tasks=tasks,
+                        quadrants=quadrants,
+                        productivity=productivity,
+                        mood=mood,
+                        streak=streak,
+                        suggestions=suggestions,
+                        sessions=sessions_with_tasks,
+                        task_progress=task_progress,
+                        today=today,
+                        form=form)
 
 
 @tasks_bp.route('/tasks/add', methods=['POST'])

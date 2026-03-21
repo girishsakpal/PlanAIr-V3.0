@@ -2,9 +2,18 @@ from datetime import date, time, timedelta, datetime, timezone
 from app.models.schedule import BusyHours, ScheduleSession
 from app.models.task import Task
 from app import db
+from app.models.mood import MoodLog
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
+
+def get_today_mood(user_id):
+    """Returns today's mood score (1–5) or 3 (neutral) if not set."""
+    mood = MoodLog.query.filter_by(
+        user_id=user_id,
+        date=date.today()
+    ).first()
+    return mood.mood_score if mood else 3
 
 def time_to_minutes(t):
     """Convert a time object to total minutes since midnight."""
@@ -21,24 +30,30 @@ def get_free_slots(user_id, target_date):
     """
     Returns a list of free (start_min, end_min) tuples for a given day,
     after subtracting all busy blocks for that day of the week.
-    Working window is 06:00 – 23:00 (1020 minutes available max).
+    For today, slots before the current time are excluded.
     """
-    day_of_week = target_date.weekday()  # 0=Mon, 6=Sun
-    working_start = 6 * 60   # 06:00
-    working_end   = 23 * 60  # 23:00
+    day_of_week   = target_date.weekday()
+    working_start = 6 * 60    # 06:00
+    working_end   = 23 * 60   # 23:00
+
+    # if scheduling for today, start from current time (rounded up to next 15 min)
+    if target_date == date.today():
+        now         = datetime.now()
+        now_minutes = now.hour * 60 + now.minute
+        # round up to next 15 minute boundary
+        now_minutes = ((now_minutes + 14) // 15) * 15
+        working_start = max(working_start, now_minutes)
 
     busy_blocks = BusyHours.query.filter_by(
         user_id=user_id,
         day_of_week=day_of_week
     ).all()
 
-    # build list of busy minute ranges
     busy = sorted([
         (time_to_minutes(b.start_time), time_to_minutes(b.end_time))
         for b in busy_blocks
     ])
 
-    # subtract busy from working window
     free = []
     cursor = working_start
 
@@ -50,8 +65,10 @@ def get_free_slots(user_id, target_date):
     if cursor < working_end:
         free.append((cursor, working_end))
 
-    return free
+    # filter out slots that are too small to be useful (less than 30 min)
+    free = [(s, e) for s, e in free if e - s >= 30]
 
+    return free
 
 def free_minutes_on_day(user_id, target_date):
     """Returns total free minutes available on a given date."""
@@ -59,13 +76,13 @@ def free_minutes_on_day(user_id, target_date):
 
 
 def get_scheduled_minutes_on_day(user_id, target_date):
-    """Returns total minutes already scheduled for a user on a given date."""
+    """Returns total minutes consumed (session + break buffer) on a given date."""
     sessions = ScheduleSession.query.filter_by(
         user_id=user_id,
         date=target_date
     ).all()
     return sum(
-        time_to_minutes(s.end_time) - time_to_minutes(s.start_time)
+        (time_to_minutes(s.end_time) - time_to_minutes(s.start_time)) + BREAK_MINUTES
         for s in sessions
     )
 
@@ -77,11 +94,12 @@ def get_available_minutes_on_day(user_id, target_date):
     return max(0, free - booked)
 
 
+BREAK_MINUTES = 15
+
 def find_next_slot(user_id, target_date, duration_minutes):
     """
     Finds the first available time slot of at least duration_minutes
-    on target_date that doesn't overlap existing sessions or busy hours.
-    Returns (start_time, end_time) or None if no slot found.
+    on target_date. Adds a 15 min break after every existing session.
     """
     free_slots = get_free_slots(user_id, target_date)
 
@@ -90,25 +108,33 @@ def find_next_slot(user_id, target_date, duration_minutes):
         date=target_date
     ).order_by(ScheduleSession.start_time).all()
 
+    # add break buffer after each session
     booked = sorted([
-        (time_to_minutes(s.start_time), time_to_minutes(s.end_time))
+        (time_to_minutes(s.start_time),
+         time_to_minutes(s.end_time) + BREAK_MINUTES)  # ← buffer added here
         for s in existing
     ])
 
     for slot_start, slot_end in free_slots:
         cursor = slot_start
+
         for b_start, b_end in booked:
             if b_end <= cursor:
                 continue
             if b_start >= slot_end:
                 break
             if b_start - cursor >= duration_minutes:
-                return minutes_to_time(cursor), minutes_to_time(cursor + duration_minutes)
+                return (
+                    minutes_to_time(cursor),
+                    minutes_to_time(cursor + duration_minutes)
+                )
             cursor = b_end
 
-        # check remaining space in this free slot
         if slot_end - cursor >= duration_minutes:
-            return minutes_to_time(cursor), minutes_to_time(cursor + duration_minutes)
+            return (
+                minutes_to_time(cursor),
+                minutes_to_time(cursor + duration_minutes)
+            )
 
     return None
 
@@ -144,18 +170,9 @@ def priority_score(task):
 # ── main scheduler ────────────────────────────────────────────────────────────
 
 def schedule_tasks(user_id, days_ahead=14):
-    """
-    Main scheduling function.
-    - Fetches all pending/in-progress tasks for the user
-    - Sorts by priority
-    - Splits each task into sessions across available free days
-    - Writes sessions to schedule_sessions table
-    - Skips days with no availability
-    """
-
-    # delete all future unfinished sessions for this user
-    # (reschedule from scratch on each call)
     today = date.today()
+
+    # delete future unfinished sessions
     ScheduleSession.query.filter(
         ScheduleSession.user_id == user_id,
         ScheduleSession.date >= today,
@@ -163,7 +180,6 @@ def schedule_tasks(user_id, days_ahead=14):
     ).delete(synchronize_session=False)
     db.session.flush()
 
-    # fetch tasks that still need scheduling
     tasks = Task.query.filter(
         Task.user_id == user_id,
         Task.status.in_(['pending', 'in-progress'])
@@ -173,32 +189,51 @@ def schedule_tasks(user_id, days_ahead=14):
         db.session.commit()
         return []
 
-    # sort by priority descending
     tasks = sorted(tasks, key=priority_score, reverse=True)
 
+    # ── mood-based adjustment ──────────────────────────
+    mood = get_today_mood(user_id)
+
+    if mood <= 2:
+        # low mood: only schedule do_now tasks today,
+        # reduce max session length to 45 min
+        max_session_minutes = 45
+        tasks_today_only = ['do_now']
+    elif mood == 3:
+        # neutral: normal scheduling
+        max_session_minutes = 120
+        tasks_today_only = None
+    else:
+        # good mood (4–5): allow longer sessions
+        max_session_minutes = 150
+        tasks_today_only = None
+    # ──────────────────────────────────────────────────
+
+    min_session_minutes = 30
     scheduled = []
 
     for task in tasks:
         remaining_minutes = int(task.estimated_hours * 60)
         session_number    = 1
         search_date       = today
-
-        # cap: how many sessions to split into (max 1 per day, min 30 min)
-        max_session_minutes = 120   # max 2 hours per session block
-        min_session_minutes = 30    # don't schedule less than 30 min
-
-        days_searched = 0
+        days_searched     = 0
 
         while remaining_minutes >= min_session_minutes and days_searched < days_ahead:
 
-            # respect deadline — don't schedule past it
             if task.deadline and search_date > task.deadline:
                 break
+
+            # low mood: skip non-critical tasks for today
+            if (tasks_today_only and
+                search_date == today and
+                task.quadrant not in tasks_today_only):
+                search_date   = search_date + timedelta(days=1)
+                days_searched += 1
+                continue
 
             available = get_available_minutes_on_day(user_id, search_date)
 
             if available >= min_session_minutes:
-                # how much to schedule on this day
                 session_minutes = min(remaining_minutes, max_session_minutes, available)
                 session_minutes = max(session_minutes, min_session_minutes)
 
@@ -206,10 +241,11 @@ def schedule_tasks(user_id, days_ahead=14):
 
                 if slot:
                     start_t, end_t = slot
-                    total_sessions = max(1, round(task.estimated_hours * 60 / max_session_minutes))
-
+                    total_sessions = max(1, round(
+                        task.estimated_hours * 60 / max_session_minutes
+                    ))
                     label = (
-                        f'Part {session_number} of {total_sessions}'
+                        f'{task.title}: Part {session_number} of {total_sessions}'
                         if task.estimated_hours > (max_session_minutes / 60)
                         else task.title
                     )
@@ -232,7 +268,6 @@ def schedule_tasks(user_id, days_ahead=14):
             search_date   = search_date + timedelta(days=1)
             days_searched += 1
 
-        # mark task as delayed if we couldn't fit it all
         if remaining_minutes >= min_session_minutes and task.status == 'pending':
             task.status = 'delayed'
 

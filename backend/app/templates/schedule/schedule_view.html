@@ -60,11 +60,25 @@
                     </div>
                     {% endif %}
                 </div>
-                <label class="checkbox-wrap" title="Mark complete">
-                    <input type="checkbox" class="session-checkbox" data-session-id="{{ s.id }}" {% if s.is_completed
-                        %}checked{% endif %}>
-                    <span class="checkmark"></span>
-                </label>
+                <div class="session-complete-wrap">
+                    {% if s.is_completed %}
+                    <!-- already completed — show logged info + undo button -->
+                    <div class="session-logged" id="logged-{{ s.id }}">
+                        <span class="logged-hours-text">
+                            {{ s.logged_hours }}h logged
+                        </span>
+                        <button class="btn-undo" onclick="undoSession({{ s.id }}, this)" title="Undo completion">
+                            Undo
+                        </button>
+                    </div>
+                    {% else %}
+                    <!-- not yet completed — show log button -->
+                    <button class="btn-log-session" id="log-btn-{{ s.id }}"
+                        onclick="openLogModal({{ s.id }}, {{ ((s.end_time.hour * 60 + s.end_time.minute) - (s.start_time.hour * 60 + s.start_time.minute)) / 60 | round(2) }})">
+                        Log hours
+                    </button>
+                    {% endif %}
+                </div>
             </div>
 
             {% if t and t.description %}
@@ -95,38 +109,197 @@
     {% endif %}
 </div>
 {% endif %}
+
+<!-- log hours modal -->
+<div class="modal-overlay" id="log-hours-modal" onclick="closeLogModal()">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:380px">
+        <div class="modal-header">
+            <h3>Log hours worked</h3>
+            <button class="modal-close" onclick="closeLogModal()">&times;</button>
+        </div>
+
+        <p class="text-muted text-sm" style="margin-bottom:1rem">
+            Allocated: <strong id="modal-allocated">0h</strong> for this session.
+            How much did you actually work?
+        </p>
+
+        <div class="log-options">
+            <button class="log-option-btn" id="btn-full" onclick="selectLogOption('full')">
+                <span class="log-option-icon">✓</span>
+                <span class="log-option-label">Full time</span>
+                <span class="log-option-sub" id="full-label">All allocated hours</span>
+            </button>
+            <button class="log-option-btn" id="btn-partial" onclick="selectLogOption('partial')">
+                <span class="log-option-icon">◑</span>
+                <span class="log-option-label">Partial</span>
+                <span class="log-option-sub">Enter how much</span>
+            </button>
+        </div>
+
+        <div id="partial-input-wrap" style="display:none; margin-top:1rem">
+            <label class="form-group">
+                <span style="font-size:0.85rem; font-weight:500">
+                    Hours worked (max <span id="max-hours-label">0</span>h)
+                </span>
+                <input type="number" id="partial-hours-input" class="form-input" step="0.25" min="0.25"
+                    placeholder="e.g. 1.5" style="margin-top:0.4rem">
+            </label>
+        </div>
+
+        <button class="btn btn-primary btn-full" style="margin-top:1.25rem" onclick="submitLog()">
+            Save
+        </button>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    document.querySelectorAll('.session-checkbox').forEach(cb => {
-        cb.addEventListener('change', function () {
-            const sessionId = this.dataset.sessionId;
-            const item = document.getElementById(`session-${sessionId}`);
+    let activeSessionId = null;
+    let allocatedHours = 0;
+    let selectedLogOption = 'full';
 
-            fetch(`/schedule/session/${sessionId}/toggle`, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': getCSRFToken() }
-            })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.is_completed) {
-                        item.classList.add('completed');
-                    } else {
-                        item.classList.remove('completed');
-                    }
-                    updateSummary();
-                });
-        });
-    });
+    function openLogModal(sessionId, allocated) {
+        activeSessionId = sessionId;
+        allocatedHours = allocated;
+        selectedLogOption = 'full';
+
+        document.getElementById('modal-allocated').textContent = allocated + 'h';
+        document.getElementById('full-label').textContent = allocated + 'h (full session)';
+        document.getElementById('max-hours-label').textContent = allocated;
+        document.getElementById('partial-hours-input').max = allocated;
+        document.getElementById('partial-hours-input').value = '';
+        document.getElementById('partial-input-wrap').style.display = 'none';
+
+        // reset button states
+        document.getElementById('btn-full').classList.add('log-option-btn--active');
+        document.getElementById('btn-partial').classList.remove('log-option-btn--active');
+
+        document.getElementById('log-hours-modal').style.display = 'flex';
+    }
+
+    function closeLogModal() {
+        document.getElementById('log-hours-modal').style.display = 'none';
+        activeSessionId = null;
+    }
+
+    function selectLogOption(option) {
+        selectedLogOption = option;
+        document.getElementById('btn-full').classList.toggle(
+            'log-option-btn--active', option === 'full'
+        );
+        document.getElementById('btn-partial').classList.toggle(
+            'log-option-btn--active', option === 'partial'
+        );
+        document.getElementById('partial-input-wrap').style.display =
+            option === 'partial' ? 'block' : 'none';
+    }
+
+    function submitLog() {
+        if (!activeSessionId) return;
+
+        let hoursWorked = allocatedHours;
+
+        if (selectedLogOption === 'partial') {
+            const val = parseFloat(
+                document.getElementById('partial-hours-input').value
+            );
+            if (!val || val <= 0 || val > allocatedHours) {
+                alert(`Please enter a value between 0.25 and ${allocatedHours}`);
+                return;
+            }
+            hoursWorked = val;
+        }
+
+        fetch(`/schedule/session/${activeSessionId}/toggle`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({ hours_worked: hoursWorked, unchecking: false })
+        })
+            .then(r => r.json())
+            .then(data => {
+                closeLogModal();
+                updateSessionUI(activeSessionId, data, hoursWorked);
+                updateProgressBars(data);
+                updateSummary();
+            });
+    }
+
+    function undoSession(sessionId, btn) {
+        fetch(`/schedule/session/${sessionId}/toggle`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({ unchecking: true })
+        })
+            .then(r => r.json())
+            .then(data => {
+                // swap logged display back to log button
+                const loggedDiv = document.getElementById(`logged-${sessionId}`);
+                if (loggedDiv) {
+                    const allocHours = data.allocated_hours;
+                    loggedDiv.outerHTML = `
+                <button class="btn-log-session"
+                        id="log-btn-${sessionId}"
+                        onclick="openLogModal(${sessionId}, ${allocHours})">
+                    Log hours
+                </button>`;
+                }
+                // un-fade the timeline item
+                const item = document.getElementById(`session-${sessionId}`);
+                if (item) item.classList.remove('completed');
+
+                updateProgressBars(data);
+                updateSummary();
+            });
+    }
+
+    function updateSessionUI(sessionId, data, hoursWorked) {
+        // replace log button with logged display
+        const logBtn = document.getElementById(`log-btn-${sessionId}`);
+        if (logBtn) {
+            logBtn.outerHTML = `
+            <div class="session-logged" id="logged-${sessionId}">
+                <span class="logged-hours-text">${hoursWorked}h logged</span>
+                <button class="btn-undo"
+                        onclick="undoSession(${sessionId}, this)"
+                        title="Undo">Undo</button>
+            </div>`;
+        }
+        // fade the timeline item
+        const item = document.getElementById(`session-${sessionId}`);
+        if (item) item.classList.add('completed');
+    }
+
+    function updateProgressBars(data) {
+        const taskId = data.task_id;
+        const bar = document.getElementById(`progress-bar-${taskId}`);
+        const label = document.getElementById(`progress-label-${taskId}`);
+
+        if (bar) bar.style.width = data.progress_pct + '%';
+        if (label) {
+            label.textContent = data.task_status === 'done'
+                ? 'Completed'
+                : `${data.completed_hours}h / ${data.estimated_hours}h (${data.progress_pct}%)`;
+        }
+        if (data.task_status === 'done' && bar) {
+            bar.classList.add('task-progress-done');
+        }
+    }
 
     function updateSummary() {
-        const total = document.querySelectorAll('.session-checkbox').length;
-        const done = document.querySelectorAll('.session-checkbox:checked').length;
+        const total = document.querySelectorAll('.btn-log-session, .session-logged').length;
+        const done = document.querySelectorAll('.session-logged').length;
         const pct = total > 0 ? Math.round(done / total * 100) : 0;
-        document.querySelector('.progress-bar').style.width = pct + '%';
-        document.querySelector('.schedule-summary span').textContent =
-            `${done} / ${total} sessions completed today`;
+        const pb = document.querySelector('.progress-bar');
+        const span = document.querySelector('.schedule-summary span');
+        if (pb) pb.style.width = pct + '%';
+        if (span) span.textContent = `${done} / ${total} sessions completed today`;
     }
 </script>
 {% endblock %}
@@ -310,39 +483,6 @@
     .timeline-desc {
         margin-top: 0.5rem;
         font-size: 0.82rem;
-    }
-
-    .checkbox-wrap {
-        display: flex;
-        align-items: center;
-        cursor: pointer;
-        flex-shrink: 0;
-    }
-
-    .checkbox-wrap input {
-        display: none;
-    }
-
-    .checkmark {
-        width: 22px;
-        height: 22px;
-        border: 2px solid var(--border);
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.15s;
-    }
-
-    .checkbox-wrap input:checked+.checkmark {
-        background: var(--primary);
-        border-color: var(--primary);
-    }
-
-    .checkbox-wrap input:checked+.checkmark::after {
-        content: '✓';
-        color: #fff;
-        font-size: 13px;
     }
 
     .schedule-summary {

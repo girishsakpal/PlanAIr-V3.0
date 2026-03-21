@@ -4,9 +4,14 @@ from app import db
 from app.models.schedule import BusyHours, ScheduleSession
 from app.models.task import Task
 from app.forms import BusyHoursForm
-from app.scheduler import schedule_tasks, schedule_recurring_tasks
+from app.scheduler import (schedule_tasks, schedule_recurring_tasks,
+                            time_to_minutes)
 import json
 from datetime import date, timedelta, datetime
+from app.models.mood import MoodLog, ProductivityLog
+from app.productivity import calculate_daily_score, get_streak
+from app.suggestions import run_suggestion_engine, get_active_suggestions, dismiss_suggestion
+
 
 schedule_bp = Blueprint('schedule', __name__)
 
@@ -123,13 +128,13 @@ def schedule_view():
 @schedule_bp.route('/schedule/generate', methods=['POST'])
 @login_required
 def generate_schedule():
-    """Trigger the scheduling engine."""
     if not current_user.busy_hours_set:
         flash('Please set your busy hours first.', 'warning')
         return redirect(url_for('schedule.busy_hours_setup'))
 
     schedule_tasks(current_user.id, days_ahead=14)
     schedule_recurring_tasks(current_user.id, days_ahead=14)
+    run_suggestion_engine(current_user.id)
 
     flash('Your schedule has been generated!', 'success')
     return redirect(url_for('schedule.schedule_view'))
@@ -138,32 +143,78 @@ def generate_schedule():
 @schedule_bp.route('/schedule/session/<int:session_id>/toggle', methods=['POST'])
 @login_required
 def toggle_session(session_id):
-    """Mark a session complete or incomplete via checkbox."""
     session = ScheduleSession.query.filter_by(
         id=session_id,
         user_id=current_user.id
     ).first_or_404()
 
-    session.is_completed = not session.is_completed
-    session.completed_at = datetime.utcnow() if session.is_completed else None
+    data         = request.get_json() or {}
+    hours_worked = data.get('hours_worked', None)
+    unchecking   = data.get('unchecking', False)
 
-    # update parent task status
+    # calculate this session's allocated hours
+    session_minutes = (
+        time_to_minutes(session.end_time) -
+        time_to_minutes(session.start_time)
+    )
+    allocated_hours = round(session_minutes / 60, 2)
+
     task = Task.query.get(session.task_id)
-    all_sessions = ScheduleSession.query.filter_by(task_id=task.id).all()
-    completed    = [s for s in all_sessions if s.is_completed]
 
-    if len(completed) == len(all_sessions):
-        task.status = 'done'
-    elif len(completed) > 0:
-        task.status = 'in-progress'
+    if unchecking:
+        # reverse previously logged hours for this session
+        prev_logged = session.logged_hours or allocated_hours
+        task.completed_hours = round(
+            max(0, (task.completed_hours or 0) - prev_logged), 2
+        )
+        session.is_completed  = False
+        session.completed_at  = None
+        session.logged_hours  = None
     else:
-        task.status = 'pending'
+        # if hours_worked not provided, assume full allocated time
+        actual_hours = float(hours_worked) if hours_worked is not None else allocated_hours
+        actual_hours = round(min(actual_hours, allocated_hours), 2)
+
+        # subtract old logged hours first if re-completing
+        if session.logged_hours is not None:
+            task.completed_hours = round(
+                max(0, (task.completed_hours or 0) - session.logged_hours), 2
+            )
+
+        # add new actual hours
+        task.completed_hours  = round((task.completed_hours or 0) + actual_hours, 2)
+        session.is_completed  = True
+        session.completed_at  = datetime.utcnow()
+        session.logged_hours  = actual_hours
+
+    # auto-complete task when all hours done
+    if task.completed_hours >= task.estimated_hours:
+        task.completed_hours = task.estimated_hours
+        task.status          = 'done'
+    else:
+        all_sessions  = ScheduleSession.query.filter_by(task_id=task.id).all()
+        any_completed = any(s.is_completed for s in all_sessions)
+        task.status   = 'in-progress' if any_completed else 'pending'
 
     db.session.commit()
 
+    log = calculate_daily_score(current_user.id, session.date)
+    run_suggestion_engine(current_user.id)
+
+    progress_pct = round(
+        (task.completed_hours / task.estimated_hours) * 100, 1
+    ) if task.estimated_hours > 0 else 0
+
     return jsonify({
-        'is_completed': session.is_completed,
-        'task_status':  task.status
+        'is_completed':    session.is_completed,
+        'task_status':     task.status,
+        'task_id':         task.id,
+        'completed_hours': task.completed_hours,
+        'estimated_hours': task.estimated_hours,
+        'progress_pct':    progress_pct,
+        'logged_hours':    session.logged_hours,
+        'allocated_hours': allocated_hours,
+        'productivity':    log.score if log else 0
     })
 
 
@@ -196,3 +247,43 @@ def week_view():
     return render_template('schedule/week_view.html',
                            week_data=week_data,
                            today=today)
+
+
+@schedule_bp.route('/mood', methods=['POST'])
+@login_required
+def log_mood():
+    """Save today's mood score."""
+    today      = date.today()
+    mood_score = request.json.get('mood_score')
+
+    if not mood_score or not (1 <= int(mood_score) <= 5):
+        return jsonify({'error': 'Invalid mood score'}), 400
+
+    mood = MoodLog.query.filter_by(
+        user_id=current_user.id,
+        date=today
+    ).first()
+
+    if mood:
+        mood.mood_score = int(mood_score)
+    else:
+        mood = MoodLog(
+            user_id    = current_user.id,
+            date       = today,
+            mood_score = int(mood_score)
+        )
+        db.session.add(mood)
+
+    db.session.commit()
+
+    # re-run suggestions after mood update
+    run_suggestion_engine(current_user.id)
+
+    return jsonify({'success': True, 'mood_score': mood.mood_score})
+
+
+@schedule_bp.route('/suggestions/dismiss/<int:suggestion_id>', methods=['POST'])
+@login_required
+def dismiss_suggestion_route(suggestion_id):
+    dismiss_suggestion(current_user.id, suggestion_id)
+    return jsonify({'success': True})
