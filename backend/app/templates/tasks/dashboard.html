@@ -7,9 +7,15 @@
         <h2>Good to see you, {{ current_user.username }}</h2>
         <p class="text-muted">{{ tasks | length }} task{{ 's' if tasks | length != 1 }} in your planner</p>
     </div>
-    <button class="btn btn-primary" onclick="openModal('add-task-modal')">
-        + Add Task
-    </button>
+    <div style="display:flex; gap:0.75rem; align-items:center;">
+        <form method="POST" action="{{ url_for('schedule.generate_schedule') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline btn-sm">Generate schedule</button>
+        </form>
+        <button class="btn btn-primary" onclick="openModal('add-task-modal')">
+            + Add Task
+        </button>
+    </div>
 </div>
 
 <!-- quick stats -->
@@ -98,14 +104,14 @@
         </div>
         <div class="task-card-right">
             <select class="status-select" onchange="updateStatus({{ task.id }}, this.value)">
-                <option value="pending"     {% if task.status == 'pending' %}selected{% endif %}>Pending</option>
-                <option value="in-progress" {% if task.status == 'in-progress' %}selected{% endif %}>In Progress</option>
-                <option value="done"        {% if task.status == 'done' %}selected{% endif %}>Done</option>
-                <option value="delayed"     {% if task.status == 'delayed' %}selected{% endif %}>Delayed</option>
+                <option value="pending" {% if task.status=='pending' %}selected{% endif %}>Pending</option>
+                <option value="in-progress" {% if task.status=='in-progress' %}selected{% endif %}>In Progress</option>
+                <option value="done" {% if task.status=='done' %}selected{% endif %}>Done</option>
+                <option value="delayed" {% if task.status=='delayed' %}selected{% endif %}>Delayed</option>
             </select>
             <a href="{{ url_for('tasks.edit_task', task_id=task.id) }}" class="btn btn-outline btn-sm">Edit</a>
             <form method="POST" action="{{ url_for('tasks.delete_task', task_id=task.id) }}"
-                  onsubmit="return confirm('Delete this task?')">
+                onsubmit="return confirm('Delete this task?')">
                 {{ form.hidden_tag() }}
                 <button type="submit" class="btn btn-danger btn-sm">Delete</button>
             </form>
@@ -176,22 +182,22 @@
 
 {% block extra_js %}
 <script>
-function openModal(id)  { document.getElementById(id).style.display = 'flex'; }
-function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+    function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+    function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-document.getElementById('is_recurring').addEventListener('change', function () {
-    document.getElementById('recurrence-group').style.display = this.checked ? 'block' : 'none';
-});
-
-function updateStatus(taskId, status) {
-    fetch(`/tasks/${taskId}/status`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCSRFToken()
-        },
-        body: JSON.stringify({ status })
+    document.getElementById('is_recurring').addEventListener('change', function () {
+        document.getElementById('recurrence-group').style.display = this.checked ? 'block' : 'none';
     });
-}
+
+    function updateStatus(taskId, status) {
+        fetch(`/tasks/${taskId}/status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({ status })
+        });
+    }
 </script>
 {% endblock %}
