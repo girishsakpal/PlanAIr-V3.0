@@ -34,4 +34,6 @@ def create_app(config_class=Config):
         from .models import user, task, schedule, mood
         db.create_all()
 
+    app.jinja_env.filters['enumerate'] = enumerate
+
     return app

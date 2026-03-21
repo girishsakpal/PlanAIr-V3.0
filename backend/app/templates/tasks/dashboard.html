@@ -1,6 +1,197 @@
 {% extends "base.html" %}
 {% block title %}Dashboard — PlanAIr{% endblock %}
+
 {% block content %}
-<h2>Dashboard</h2>
-<p>Welcome, {{ current_user.username }}. Phase 2 coming soon.</p>
+<div class="dashboard-header">
+    <div>
+        <h2>Good to see you, {{ current_user.username }}</h2>
+        <p class="text-muted">{{ tasks | length }} task{{ 's' if tasks | length != 1 }} in your planner</p>
+    </div>
+    <button class="btn btn-primary" onclick="openModal('add-task-modal')">
+        + Add Task
+    </button>
+</div>
+
+<!-- quick stats -->
+<div class="stats-row">
+    <div class="stat-card">
+        <span class="stat-number">{{ tasks | selectattr('status', 'eq', 'done') | list | length }}</span>
+        <span class="stat-label">Completed</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ tasks | selectattr('status', 'eq', 'pending') | list | length }}</span>
+        <span class="stat-label">Pending</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ tasks | selectattr('status', 'eq', 'delayed') | list | length }}</span>
+        <span class="stat-label">Delayed</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ tasks | selectattr('quadrant', 'eq', 'do_now') | list | length }}</span>
+        <span class="stat-label">Urgent &amp; Important</span>
+    </div>
+</div>
+
+<!-- eisenhower matrix -->
+<div class="section-header">
+    <h3>Eisenhower Matrix</h3>
+    <a href="{{ url_for('tasks.matrix') }}" class="link text-sm">Full view</a>
+</div>
+
+<div class="matrix-grid">
+    <div class="matrix-cell matrix-do-now">
+        <div class="matrix-label">Urgent + Important</div>
+        <div class="matrix-sublabel">Do now</div>
+        {% for task in quadrants.do_now %}
+        <div class="matrix-task">{{ task.title }}</div>
+        {% else %}
+        <p class="matrix-empty">No tasks here</p>
+        {% endfor %}
+    </div>
+    <div class="matrix-cell matrix-schedule">
+        <div class="matrix-label">Important, Not Urgent</div>
+        <div class="matrix-sublabel">Schedule</div>
+        {% for task in quadrants.schedule %}
+        <div class="matrix-task">{{ task.title }}</div>
+        {% else %}
+        <p class="matrix-empty">No tasks here</p>
+        {% endfor %}
+    </div>
+    <div class="matrix-cell matrix-delegate">
+        <div class="matrix-label">Urgent, Not Important</div>
+        <div class="matrix-sublabel">Delegate</div>
+        {% for task in quadrants.delegate %}
+        <div class="matrix-task">{{ task.title }}</div>
+        {% else %}
+        <p class="matrix-empty">No tasks here</p>
+        {% endfor %}
+    </div>
+    <div class="matrix-cell matrix-avoid">
+        <div class="matrix-label">Not Urgent, Not Important</div>
+        <div class="matrix-sublabel">Avoid</div>
+        {% for task in quadrants.avoid %}
+        <div class="matrix-task">{{ task.title }}</div>
+        {% else %}
+        <p class="matrix-empty">No tasks here</p>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- all tasks list -->
+<div class="section-header" style="margin-top:2rem">
+    <h3>All Tasks</h3>
+</div>
+
+{% if tasks %}
+<div class="task-list">
+    {% for task in tasks %}
+    <div class="task-card status-{{ task.status }}">
+        <div class="task-card-left">
+            <div class="task-title">{{ task.title }}</div>
+            <div class="task-meta">
+                <span class="badge badge-{{ task.quadrant }}">{{ task.quadrant | replace('_', ' ') | title }}</span>
+                <span class="text-muted text-sm">{{ task.estimated_hours }}h estimated</span>
+                {% if task.deadline %}
+                <span class="text-muted text-sm">Due {{ task.deadline.strftime('%d %b %Y') }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="task-card-right">
+            <select class="status-select" onchange="updateStatus({{ task.id }}, this.value)">
+                <option value="pending"     {% if task.status == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="in-progress" {% if task.status == 'in-progress' %}selected{% endif %}>In Progress</option>
+                <option value="done"        {% if task.status == 'done' %}selected{% endif %}>Done</option>
+                <option value="delayed"     {% if task.status == 'delayed' %}selected{% endif %}>Delayed</option>
+            </select>
+            <a href="{{ url_for('tasks.edit_task', task_id=task.id) }}" class="btn btn-outline btn-sm">Edit</a>
+            <form method="POST" action="{{ url_for('tasks.delete_task', task_id=task.id) }}"
+                  onsubmit="return confirm('Delete this task?')">
+                {{ form.hidden_tag() }}
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No tasks yet. Add your first task to get started.</p>
+</div>
+{% endif %}
+
+<!-- add task modal -->
+<div class="modal-overlay" id="add-task-modal" onclick="closeModal('add-task-modal')">
+    <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3>Add New Task</h3>
+            <button class="modal-close" onclick="closeModal('add-task-modal')">&times;</button>
+        </div>
+        <form method="POST" action="{{ url_for('tasks.add_task') }}" novalidate>
+            {{ form.hidden_tag() }}
+
+            <div class="form-group">
+                {{ form.title.label }}
+                {{ form.title(class="form-input", placeholder="e.g. Finish project report") }}
+            </div>
+            <div class="form-group">
+                {{ form.description.label }}
+                {{ form.description(class="form-input form-textarea", rows=3, placeholder="Optional details...") }}
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form.urgency.label }}
+                    {{ form.urgency(class="form-input form-select") }}
+                </div>
+                <div class="form-group">
+                    {{ form.importance.label }}
+                    {{ form.importance(class="form-input form-select") }}
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    {{ form.estimated_hours.label }}
+                    {{ form.estimated_hours(class="form-input", placeholder="e.g. 3.5") }}
+                </div>
+                <div class="form-group">
+                    {{ form.deadline.label }}
+                    {{ form.deadline(class="form-input", type="date") }}
+                </div>
+            </div>
+            <div class="form-group form-group--checkbox">
+                {{ form.is_recurring(class="form-checkbox", id="is_recurring") }}
+                <label for="is_recurring">Recurring task</label>
+            </div>
+            <div class="form-group" id="recurrence-group" style="display:none">
+                {{ form.recurrence_type.label }}
+                {{ form.recurrence_type(class="form-input form-select") }}
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full" style="margin-top:1rem">
+                Add Task
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openModal(id)  { document.getElementById(id).style.display = 'flex'; }
+function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+document.getElementById('is_recurring').addEventListener('change', function () {
+    document.getElementById('recurrence-group').style.display = this.checked ? 'block' : 'none';
+});
+
+function updateStatus(taskId, status) {
+    fetch(`/tasks/${taskId}/status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({ status })
+    });
+}
+</script>
 {% endblock %}

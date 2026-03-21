@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Eisenhower Matrix — PlanAIr{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Eisenhower Matrix</h2>
+    <p class="text-muted">Your tasks organized by urgency and importance.</p>
+</div>
+
+<div class="matrix-grid matrix-grid--full">
+    <div class="matrix-cell matrix-do-now">
+        <div class="matrix-label">Urgent + Important</div>
+        <div class="matrix-sublabel">Do now</div>
+        {% for task in quadrants.do_now %}
+        <a href="{{ url_for('tasks.edit_task', task_id=task.id) }}" class="matrix-task-link">
+            <div class="matrix-task-full">
+                <span class="task-name">{{ task.title }}</span>
+                <span class="task-hours">{{ task.estimated_hours }}h</span>
+            </div>
+        </a>
+        {% else %}<p class="matrix-empty">Clear — great work!</p>{% endfor %}
+    </div>
+
+    <div class="matrix-cell matrix-schedule">
+        <div class="matrix-label">Important, Not Urgent</div>
+        <div class="matrix-sublabel">Schedule</div>
+        {% for task in quadrants.schedule %}
+        <a href="{{ url_for('tasks.edit_task', task_id=task.id) }}" class="matrix-task-link">
+            <div class="matrix-task-full">
+                <span class="task-name">{{ task.title }}</span>
+                <span class="task-hours">{{ task.estimated_hours }}h</span>
+            </div>
+        </a>
+        {% else %}<p class="matrix-empty">No tasks scheduled</p>{% endfor %}
+    </div>
+
+    <div class="matrix-cell matrix-delegate">
+        <div class="matrix-label">Urgent, Not Important</div>
+        <div class="matrix-sublabel">Delegate</div>
+        {% for task in quadrants.delegate %}
+        <a href="{{ url_for('tasks.edit_task', task_id=task.id) }}" class="matrix-task-link">
+            <div class="matrix-task-full">
+                <span class="task-name">{{ task.title }}</span>
+                <span class="task-hours">{{ task.estimated_hours }}h</span>
+            </div>
+        </a>
+        {% else %}<p class="matrix-empty">Nothing to delegate</p>{% endfor %}
+    </div>
+
+    <div class="matrix-cell matrix-avoid">
+        <div class="matrix-label">Not Urgent, Not Important</div>
+        <div class="matrix-sublabel">Avoid</div>
+        {% for task in quadrants.avoid %}
+        <a href="{{ url_for('tasks.edit_task', task_id=task.id) }}" class="matrix-task-link">
+            <div class="matrix-task-full">
+                <span class="task-name">{{ task.title }}</span>
+                <span class="task-hours">{{ task.estimated_hours }}h</span>
+            </div>
+        </a>
+        {% else %}<p class="matrix-empty">Nothing to eliminate</p>{% endfor %}
+    </div>
+</div>
+{% endblock %}
