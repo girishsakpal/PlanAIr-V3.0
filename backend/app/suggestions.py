@@ -297,6 +297,15 @@ def _check_all_done(user_id, today):
 
 # ── public API ────────────────────────────────────────────────────────────────
 
+def clear_all_suggestions(user_id):
+    """Dismisses all active suggestions for a user."""
+    Suggestion.query.filter_by(
+        user_id=user_id,
+        is_dismissed=False
+    ).update({'is_dismissed': True}, synchronize_session=False)
+    db.session.commit()
+
+
 def run_suggestion_engine(user_id):
     """
     Runs all suggestion rules for the user.

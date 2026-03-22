@@ -10,7 +10,7 @@ import json
 from datetime import date, timedelta, datetime
 from app.models.mood import MoodLog, ProductivityLog
 from app.productivity import calculate_daily_score, get_streak
-from app.suggestions import run_suggestion_engine, get_active_suggestions, dismiss_suggestion
+from app.suggestions import run_suggestion_engine, get_active_suggestions, dismiss_suggestion, clear_all_suggestions
 
 
 schedule_bp = Blueprint('schedule', __name__)
@@ -132,6 +132,7 @@ def generate_schedule():
         flash('Please set your busy hours first.', 'warning')
         return redirect(url_for('schedule.busy_hours_setup'))
 
+    clear_all_suggestions(current_user.id)
     schedule_tasks(current_user.id, days_ahead=14)
     schedule_recurring_tasks(current_user.id, days_ahead=14)
     run_suggestion_engine(current_user.id)

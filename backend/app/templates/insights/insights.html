@@ -1,6 +1,487 @@
 {% extends "base.html" %}
 {% block title %}Insights — PlanAIr{% endblock %}
+
 {% block content %}
-<h2>Insights</h2>
-<p>Phase 5 will build this page.</p>
+
+<!-- summary banner -->
+<div class="insights-summary-banner">
+    <p class="summary-text">{{ summary }}</p>
+</div>
+
+<!-- stat cards -->
+<div class="insights-stats-row">
+    <div class="insight-stat-card">
+        <span class="insight-stat-number">{{ stats.avg_score }}%</span>
+        <span class="insight-stat-label">Avg productivity this week</span>
+    </div>
+    <div class="insight-stat-card">
+        <span class="insight-stat-number">
+            {{ stats.week_completed }}/{{ stats.week_total }}
+        </span>
+        <span class="insight-stat-label">Sessions completed this week</span>
+    </div>
+    <div class="insight-stat-card">
+        <span class="insight-stat-number">{{ stats.total_hours }}h</span>
+        <span class="insight-stat-label">Total hours logged</span>
+    </div>
+    <div class="insight-stat-card">
+        <span class="insight-stat-number">{{ stats.streak }}</span>
+        <span class="insight-stat-label">Day streak</span>
+    </div>
+    <div class="insight-stat-card">
+        <span class="insight-stat-number">
+            {{ stats.done_tasks }}/{{ stats.total_tasks }}
+        </span>
+        <span class="insight-stat-label">Tasks completed</span>
+    </div>
+</div>
+
+<!-- charts grid -->
+<div class="charts-grid">
+
+    <!-- productivity trend -->
+    <div class="chart-card chart-card--wide">
+        <div class="chart-header">
+            <h3>Productivity trend</h3>
+            <span class="chart-sub">Daily score over the past 7 days</span>
+        </div>
+        <canvas id="productivityChart" height="100"></canvas>
+    </div>
+
+    <!-- session completion -->
+    <div class="chart-card chart-card--wide">
+        <div class="chart-header">
+            <h3>Session completion</h3>
+            <span class="chart-sub">Completed vs pending sessions per day</span>
+        </div>
+        <canvas id="completionChart" height="100"></canvas>
+    </div>
+
+    <!-- most productive hours -->
+    <div class="chart-card">
+        <div class="chart-header">
+            <h3>Most productive hours</h3>
+            <span class="chart-sub">When you complete the most work</span>
+        </div>
+        <canvas id="hoursChart" height="180"></canvas>
+    </div>
+
+    <!-- quadrant distribution -->
+    <div class="chart-card">
+        <div class="chart-header">
+            <h3>Workload distribution</h3>
+            <span class="chart-sub">Hours by Eisenhower quadrant this week</span>
+        </div>
+        <canvas id="quadrantChart" height="180"></canvas>
+        <div class="quadrant-legend">
+            <span class="ql-dot" style="background:#ef4444"></span>Do now
+            <span class="ql-dot" style="background:#3b82f6"></span>Schedule
+            <span class="ql-dot" style="background:#f59e0b"></span>Delegate
+            <span class="ql-dot" style="background:#6b7280"></span>Avoid
+        </div>
+    </div>
+
+    <!-- mood trend -->
+    <div class="chart-card chart-card--wide">
+        <div class="chart-header">
+            <h3>Mood trend</h3>
+            <span class="chart-sub">How you've been feeling this week</span>
+        </div>
+        <canvas id="moodChart" height="80"></canvas>
+        <div class="mood-legend">
+            <span>1 = Rough</span>
+            <span>2 = Low</span>
+            <span>3 = Okay</span>
+            <span>4 = Good</span>
+            <span>5 = Great</span>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+    const weeklyProd = {{ weekly_prod | safe }};
+    const weeklyComp = {{ weekly_comp | safe }};
+    const productiveHrs = {{ productive_hours | safe }};
+    const quadrantDist = {{ quadrant_dist | safe }};
+    const moodTrend = {{ mood_trend | safe }};
+
+    // detect dark mode
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const gridColor = dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+    const textColor = dark ? '#9ca3af' : '#6b7280';
+    const fontFamily = "'Segoe UI', system-ui, sans-serif";
+
+    Chart.defaults.font.family = fontFamily;
+    Chart.defaults.font.size = 12;
+    Chart.defaults.color = textColor;
+
+    const baseOptions = {
+        responsive: true,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                backgroundColor: dark ? '#1e1e1e' : '#fff',
+                titleColor: dark ? '#f1f1f1' : '#1a1a1a',
+                bodyColor: dark ? '#9ca3af' : '#6b7280',
+                borderColor: dark ? '#2d2d2d' : '#e5e7eb',
+                borderWidth: 1,
+                padding: 10,
+                cornerRadius: 8
+            }
+        },
+        scales: {
+            x: {
+                grid: { color: gridColor },
+                ticks: { color: textColor }
+            },
+            y: {
+                grid: { color: gridColor },
+                ticks: { color: textColor }
+            }
+        }
+    };
+
+    // ── productivity trend ────────────────────────────────────────────────────────
+    new Chart(document.getElementById('productivityChart'), {
+        type: 'line',
+        data: {
+            labels: weeklyProd.map(d => d.date),
+            datasets: [{
+                data: weeklyProd.map(d => d.score),
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99,102,241,0.08)',
+                borderWidth: 2.5,
+                pointRadius: 4,
+                pointBackgroundColor: '#6366f1',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            ...baseOptions,
+            plugins: {
+                ...baseOptions.plugins,
+                tooltip: {
+                    ...baseOptions.plugins.tooltip,
+                    callbacks: {
+                        label: ctx => `Score: ${ctx.parsed.y}%`
+                    }
+                }
+            },
+            scales: {
+                ...baseOptions.scales,
+                y: {
+                    ...baseOptions.scales.y,
+                    min: 0,
+                    max: 100,
+                    ticks: {
+                        ...baseOptions.scales.y.ticks,
+                        callback: v => v + '%'
+                    }
+                }
+            }
+        }
+    });
+
+    // ── session completion bar ────────────────────────────────────────────────────
+    new Chart(document.getElementById('completionChart'), {
+        type: 'bar',
+        data: {
+            labels: weeklyComp.map(d => d.date),
+            datasets: [
+                {
+                    label: 'Completed',
+                    data: weeklyComp.map(d => d.completed),
+                    backgroundColor: 'rgba(99,102,241,0.8)',
+                    borderRadius: 4,
+                    borderSkipped: false
+                },
+                {
+                    label: 'Pending',
+                    data: weeklyComp.map(d => d.pending),
+                    backgroundColor: dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                    borderRadius: 4,
+                    borderSkipped: false
+                }
+            ]
+        },
+        options: {
+            ...baseOptions,
+            plugins: {
+                ...baseOptions.plugins,
+                legend: {
+                    display: true,
+                    position: 'top',
+                    labels: { color: textColor, boxWidth: 12, padding: 16 }
+                }
+            },
+            scales: {
+                ...baseOptions.scales,
+                x: { ...baseOptions.scales.x, stacked: true },
+                y: {
+                    ...baseOptions.scales.y, stacked: true,
+                    ticks: {
+                        ...baseOptions.scales.y.ticks,
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+
+    // ── productive hours bar ──────────────────────────────────────────────────────
+    new Chart(document.getElementById('hoursChart'), {
+        type: 'bar',
+        data: {
+            labels: productiveHrs.map(d => d.hour),
+            datasets: [{
+                data: productiveHrs.map(d => d.count),
+                backgroundColor: productiveHrs.map(d =>
+                    d.count === Math.max(...productiveHrs.map(x => x.count))
+                        ? '#6366f1'
+                        : dark ? 'rgba(255,255,255,0.1)' : 'rgba(99,102,241,0.2)'
+                ),
+                borderRadius: 4,
+                borderSkipped: false
+            }]
+        },
+        options: {
+            ...baseOptions,
+            indexAxis: 'y',
+            plugins: {
+                ...baseOptions.plugins,
+                tooltip: {
+                    ...baseOptions.plugins.tooltip,
+                    callbacks: {
+                        label: ctx => `${ctx.parsed.x} session${ctx.parsed.x !== 1 ? 's' : ''} completed`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ...baseOptions.scales.x,
+                    ticks: {
+                        ...baseOptions.scales.x.ticks,
+                        stepSize: 1
+                    }
+                },
+                y: { ...baseOptions.scales.y }
+            }
+        }
+    });
+
+    // ── quadrant donut ────────────────────────────────────────────────────────────
+    new Chart(document.getElementById('quadrantChart'), {
+        type: 'doughnut',
+        data: {
+            labels: quadrantDist.map(d => d.quadrant),
+            datasets: [{
+                data: quadrantDist.map(d => d.hours),
+                backgroundColor: ['#ef4444', '#3b82f6', '#f59e0b', '#6b7280'],
+                borderWidth: 0,
+                hoverOffset: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            cutout: '65%',
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    ...baseOptions.plugins.tooltip,
+                    callbacks: {
+                        label: ctx => `${ctx.label}: ${ctx.parsed}h`
+                    }
+                }
+            }
+        }
+    });
+
+    // ── mood trend line ───────────────────────────────────────────────────────────
+    const moodColors = {
+        1: '#ef4444',
+        2: '#f59e0b',
+        3: '#6b7280',
+        4: '#3b82f6',
+        5: '#22c55e'
+    };
+
+    new Chart(document.getElementById('moodChart'), {
+        type: 'line',
+        data: {
+            labels: moodTrend.map(d => d.date),
+            datasets: [{
+                data: moodTrend.map(d => d.score),
+                borderColor: '#6366f1',
+                backgroundColor: 'rgba(99,102,241,0.06)',
+                borderWidth: 2,
+                pointRadius: 6,
+                pointBackgroundColor: moodTrend.map(d =>
+                    d.score ? moodColors[d.score] : 'transparent'
+                ),
+                pointBorderWidth: 0,
+                fill: true,
+                tension: 0.4,
+                spanGaps: true
+            }]
+        },
+        options: {
+            ...baseOptions,
+            plugins: {
+                ...baseOptions.plugins,
+                tooltip: {
+                    ...baseOptions.plugins.tooltip,
+                    callbacks: {
+                        label: ctx => {
+                            const labels = {
+                                1: 'Rough', 2: 'Low',
+                                3: 'Okay', 4: 'Good', 5: 'Great'
+                            };
+                            return ctx.parsed.y
+                                ? `Mood: ${labels[ctx.parsed.y]} (${ctx.parsed.y}/5)`
+                                : 'No mood logged';
+                        }
+                    }
+                }
+            },
+            scales: {
+                ...baseOptions.scales,
+                y: {
+                    ...baseOptions.scales.y,
+                    min: 1,
+                    max: 5,
+                    ticks: {
+                        ...baseOptions.scales.y.ticks,
+                        stepSize: 1,
+                        callback: v => ({
+                            1: 'Rough', 2: 'Low',
+                            3: 'Okay', 4: 'Good', 5: 'Great'
+                        }[v] || '')
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .insights-summary-banner {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--primary);
+        border-radius: var(--radius);
+        padding: 1rem 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .summary-text {
+        font-size: 0.95rem;
+        color: var(--text);
+        line-height: 1.6;
+        margin: 0;
+    }
+
+    .insights-stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .insight-stat-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1rem 1.25rem;
+        text-align: center;
+        box-shadow: var(--shadow);
+    }
+
+    .insight-stat-number {
+        display: block;
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--primary);
+    }
+
+    .insight-stat-label {
+        display: block;
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        margin-top: 0.2rem;
+    }
+
+    .charts-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.25rem;
+    }
+
+    @media(max-width:768px) {
+        .charts-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .chart-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.25rem;
+        box-shadow: var(--shadow);
+    }
+
+    .chart-card--wide {
+        grid-column: 1 / -1;
+    }
+
+    .chart-header {
+        margin-bottom: 1rem;
+    }
+
+    .chart-header h3 {
+        font-size: 1rem;
+        font-weight: 500;
+        margin: 0 0 0.2rem;
+    }
+
+    .chart-sub {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+    }
+
+    .quadrant-legend {
+        display: flex;
+        gap: 1rem;
+        margin-top: 0.75rem;
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .ql-dot {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin-right: 4px;
+    }
+
+    .mood-legend {
+        display: flex;
+        gap: 1rem;
+        margin-top: 0.75rem;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+</style>
 {% endblock %}

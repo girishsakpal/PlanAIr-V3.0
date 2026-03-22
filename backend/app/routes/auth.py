@@ -3,6 +3,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app import db
 from app.models.user import User
 from app.forms import SignupForm, LoginForm
+from app.suggestions import clear_all_suggestions
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -66,6 +67,7 @@ def login():
 @auth_bp.route('/logout')
 @login_required
 def logout():
+    clear_all_suggestions(current_user.id)
     logout_user()
     flash('You have been logged out.', 'info')
     return redirect(url_for('auth.landing'))
