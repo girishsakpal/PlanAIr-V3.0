@@ -172,6 +172,12 @@ def priority_score(task):
 def schedule_tasks(user_id, days_ahead=14):
     today = date.today()
 
+    # guard: no busy hours set yet
+    from app.models.user import User
+    user = User.query.get(user_id)
+    if not user or not user.busy_hours_set:
+        return []
+
     # delete future unfinished sessions
     ScheduleSession.query.filter(
         ScheduleSession.user_id == user_id,
@@ -213,6 +219,10 @@ def schedule_tasks(user_id, days_ahead=14):
     scheduled = []
 
     for task in tasks:
+        # guard: skip tasks with invalid hours
+        if not task.estimated_hours or task.estimated_hours <= 0:
+            continue
+        
         remaining_minutes = int(task.estimated_hours * 60)
         session_number    = 1
         search_date       = today
@@ -267,6 +277,10 @@ def schedule_tasks(user_id, days_ahead=14):
 
             search_date   = search_date + timedelta(days=1)
             days_searched += 1
+
+        # warn if task couldn't be scheduled at all
+        if session_number == 1 and task.status != 'done':
+            task.status = 'delayed'
 
         if remaining_minutes >= min_session_minutes and task.status == 'pending':
             task.status = 'delayed'

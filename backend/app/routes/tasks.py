@@ -101,24 +101,28 @@ def add_task():
     form = TaskForm()
     if form.validate_on_submit():
         task = Task(
-            user_id=current_user.id,
-            title=form.title.data,
-            description=form.description.data,
-            urgency=int(form.urgency.data),
-            importance=int(form.importance.data),
-            estimated_hours=form.estimated_hours.data,
-            deadline=form.deadline.data,
-            is_recurring=form.is_recurring.data,
-            recurrence_type=form.recurrence_type.data or None,
+            user_id         = current_user.id,
+            title           = form.title.data.strip(),
+            description     = form.description.data.strip() if form.description.data else None,
+            urgency         = int(form.urgency.data),
+            importance      = int(form.importance.data),
+            estimated_hours = form.estimated_hours.data,
+            deadline        = form.deadline.data,
+            is_recurring    = form.is_recurring.data,
+            recurrence_type = form.recurrence_type.data or None,
         )
         task.quadrant = task.compute_quadrant()
         db.session.add(task)
         db.session.commit()
-        flash(f'Task "{task.title}" added successfully!', 'success')
+        flash(f'Task "{task.title}" added!', 'success')
     else:
-        for field, errors in form.errors.items():
-            for error in errors:
-                flash(f'{error}', 'danger')
+        # collect all errors into one readable message
+        errors = []
+        for field, msgs in form.errors.items():
+            for msg in msgs:
+                errors.append(msg)
+        if errors:
+            flash(' · '.join(errors), 'danger')
 
     return redirect(url_for('tasks.dashboard'))
 

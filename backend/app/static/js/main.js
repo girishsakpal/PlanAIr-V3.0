@@ -18,3 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => flash.remove(), 4000);
     });
 });
+
+function toggleMobileNav() {
+    const nav = document.getElementById('nav-links');
+    nav.classList.toggle('nav-open');
+}

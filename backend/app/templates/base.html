@@ -15,21 +15,31 @@
     {% if current_user.is_authenticated %}
     <nav class="navbar">
         <div class="nav-brand">PlanAIr</div>
-        <div class="nav-links">
+
+        {% if current_user.is_authenticated %}
+        <button class="hamburger" onclick="toggleMobileNav()" aria-label="Menu">
+            &#9776;
+        </button>
+        {% endif %}
+
+        <div class="nav-links" id="nav-links">
             <a href="{{ url_for('tasks.dashboard') }}">Dashboard</a>
             <a href="{{ url_for('tasks.matrix') }}">Matrix</a>
             <a href="{{ url_for('schedule.schedule_view') }}">Schedule</a>
             <a href="{{ url_for('schedule.week_view') }}">Week</a>
             <a href="{{ url_for('insights.insights') }}">Insights</a>
         </div>
+
+        {% if current_user.is_authenticated %}
         <div class="nav-actions">
-            <button class="dark-mode-toggle" onclick="toggleDarkMode()" aria-label="Toggle dark mode">
+            <button class="dark-mode-toggle" onclick="toggleDarkMode()">
                 <span class="icon-sun">&#9788;</span>
                 <span class="icon-moon">&#9790;</span>
             </button>
             <span class="nav-username">{{ current_user.username }}</span>
             <a href="{{ url_for('auth.logout') }}" class="btn btn-outline">Log out</a>
         </div>
+        {% endif %}
     </nav>
     {% endif %}
 
