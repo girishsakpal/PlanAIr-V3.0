@@ -596,17 +596,6 @@ a:hover {
     color: #d1d5db;
 }
 
-/* ── status select ── */
-.status-select {
-    padding: 0.3rem 0.5rem;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--bg);
-    color: var(--text);
-    font-size: 0.82rem;
-    cursor: pointer;
-}
-
 /* ── buttons sm ── */
 .btn-sm {
     padding: 0.3rem 0.75rem;
@@ -1202,4 +1191,248 @@ a:hover {
     .nav-links a:last-child {
         border-bottom: none;
     }
+}
+
+/* ── logo ── */
+.nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+}
+
+.nav-brand span {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.nav-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.hero-logo {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 1.25rem;
+}
+
+/* ── dashboard greeting ── */
+.dash-greeting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.dash-greeting {
+    font-size: 1.6rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem;
+}
+
+.dash-sub {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.dash-greeting-right {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.streak-pill {
+    background: rgba(249, 115, 22, 0.1);
+    color: #ea580c;
+    border-radius: 20px;
+    padding: 0.15rem 0.6rem;
+    font-size: 0.82rem;
+    font-weight: 500;
+}
+
+[data-theme="dark"] .streak-pill {
+    background: rgba(249, 115, 22, 0.15);
+    color: #fb923c;
+}
+
+/* ── top row ── */
+.dash-top-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+    align-items: start;
+}
+
+@media(max-width:900px) {
+    .dash-top-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── dash card base ── */
+.dash-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.1rem 1.25rem;
+    box-shadow: var(--shadow);
+}
+
+.dash-card-label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.85rem;
+}
+
+/* ── score row inside productivity card ── */
+.score-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.score-circle {
+    width: 72px;
+    height: 72px;
+    flex-shrink: 0;
+}
+
+.score-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    flex: 1;
+}
+
+.score-line {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.score-line strong {
+    color: var(--text);
+    font-weight: 600;
+}
+
+/* ── mini stats column ── */
+.dash-stats-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.dash-mini-stat {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.65rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-width: 140px;
+    box-shadow: var(--shadow);
+}
+
+.dash-mini-num {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+.dash-mini-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* ── matrix improvements ── */
+.matrix-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.matrix-cell {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1rem 1.1rem;
+    min-height: 100px;
+}
+
+.matrix-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.matrix-sublabel {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-bottom: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.matrix-task {
+    font-size: 0.85rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    margin-bottom: 0.3rem;
+}
+
+.matrix-task:last-child {
+    margin-bottom: 0;
+}
+
+/* ── mini timeline improvements ── */
+.mini-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.mini-session {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0.65rem 1rem;
+}
+
+.mini-session-title {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+/* ── section headers ── */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 1.75rem 0 0.85rem;
+}
+
+.section-header h3 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0;
 }

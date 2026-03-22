@@ -288,3 +288,5 @@ def log_mood():
 def dismiss_suggestion_route(suggestion_id):
     dismiss_suggestion(current_user.id, suggestion_id)
     return jsonify({'success': True})
+
+
