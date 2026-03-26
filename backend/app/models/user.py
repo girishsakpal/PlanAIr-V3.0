@@ -23,6 +23,7 @@ class User(db.Model, UserMixin):
     dark_mode      = db.Column(db.Boolean, default=False)
     busy_hours_set = db.Column(db.Boolean, default=False)
     created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+    last_login = db.Column(db.DateTime, nullable=True)
 
     # relationships
     busy_hours        = db.relationship('BusyHours', backref='user',

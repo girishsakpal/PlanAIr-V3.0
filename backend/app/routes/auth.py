@@ -2,18 +2,33 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from app import db
 from app.models.user import User
+from app.models.task import Task
 from app.forms import SignupForm, LoginForm
 from app.suggestions import clear_all_suggestions
+from app.models.schedule import ScheduleSession
+from datetime import date, timedelta
 from app import limiter
 
 auth_bp = Blueprint('auth', __name__)
-
 
 @auth_bp.route('/')
 def landing():
     if current_user.is_authenticated:
         return redirect(url_for('tasks.dashboard'))
-    return render_template('landing.html')
+
+    total_users    = User.query.count()
+    total_tasks    = Task.query.count()
+    total_sessions = ScheduleSession.query.filter_by(is_completed=True).count()
+
+    active_week = User.query.filter(
+        User.created_at >= date.today() - timedelta(days=7)
+    ).count()
+
+    return render_template('landing.html',
+                           total_users=total_users,
+                           total_tasks=total_tasks,
+                           total_sessions=total_sessions,
+                           active_week=active_week)
 
 
 @auth_bp.route('/signup', methods=['GET', 'POST'])
@@ -44,6 +59,11 @@ def signup():
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('tasks.dashboard'))
+    
+    if user and user.check_password(form.password.data):
+        user.last_login = datetime.utcnow()
+        db.session.commit()
+        login_user(user, remember=form.remember.data)
 
     form = LoginForm()
     if form.validate_on_submit():

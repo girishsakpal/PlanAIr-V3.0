@@ -5,7 +5,10 @@
 <div class="auth-container">
     <div class="auth-card">
         <h2>Create your account</h2>
-        <p class="auth-subtitle">Start planning intelligently.</p>
+        <p class="auth-subtitle">
+            PlanAIr is invite only.
+            <span class="invite-badge">Promo code required</span>
+        </p>
 
         <form method="POST" action="{{ url_for('auth.signup') }}" novalidate>
             {{ form.hidden_tag() }}
@@ -14,7 +17,7 @@
                 {{ form.username.label }}
                 {{ form.username(class="form-input", placeholder="e.g. john_doe") }}
                 {% for error in form.username.errors %}
-                    <span class="form-error">{{ error }}</span>
+                <span class="form-error">{{ error }}</span>
                 {% endfor %}
             </div>
 
@@ -22,7 +25,7 @@
                 {{ form.email.label }}
                 {{ form.email(class="form-input", placeholder="you@example.com") }}
                 {% for error in form.email.errors %}
-                    <span class="form-error">{{ error }}</span>
+                <span class="form-error">{{ error }}</span>
                 {% endfor %}
             </div>
 
@@ -30,7 +33,7 @@
                 {{ form.password.label }}
                 {{ form.password(class="form-input", placeholder="Min. 8 characters") }}
                 {% for error in form.password.errors %}
-                    <span class="form-error">{{ error }}</span>
+                <span class="form-error">{{ error }}</span>
                 {% endfor %}
             </div>
 
@@ -38,7 +41,20 @@
                 {{ form.confirm_password.label }}
                 {{ form.confirm_password(class="form-input", placeholder="Repeat password") }}
                 {% for error in form.confirm_password.errors %}
-                    <span class="form-error">{{ error }}</span>
+                <span class="form-error">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <!-- promo code -->
+            <div class="form-group promo-group">
+                {{ form.promo_code.label }}
+                <div class="promo-input-wrap">
+                    {{ form.promo_code(class="form-input promo-input",
+                    placeholder="Enter your promo code") }}
+                    <span class="promo-icon">&#128274;</span>
+                </div>
+                {% for error in form.promo_code.errors %}
+                <span class="form-error">{{ error }}</span>
                 {% endfor %}
             </div>
 
@@ -48,11 +64,13 @@
                     I agree to the <a href="#" class="link">Terms &amp; Conditions</a>
                 </label>
                 {% for error in form.terms.errors %}
-                    <span class="form-error">{{ error }}</span>
+                <span class="form-error">{{ error }}</span>
                 {% endfor %}
             </div>
 
-            <button type="submit" class="btn btn-primary btn-full">Create Account</button>
+            <button type="submit" class="btn btn-primary btn-full">
+                Create Account
+            </button>
         </form>
 
         <p class="auth-footer">
@@ -61,4 +79,43 @@
         </p>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .invite-badge {
+        display: inline-block;
+        background: rgba(99, 102, 241, 0.1);
+        color: var(--primary);
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        border-radius: 20px;
+        font-size: 0.72rem;
+        padding: 0.15rem 0.5rem;
+        margin-left: 0.4rem;
+        font-weight: 500;
+    }
+
+    .promo-group {
+        margin-top: 0.25rem;
+    }
+
+    .promo-input-wrap {
+        position: relative;
+    }
+
+    .promo-input {
+        padding-right: 2.5rem !important;
+        letter-spacing: 0.08em;
+        font-weight: 500;
+    }
+
+    .promo-icon {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 0.9rem;
+        pointer-events: none;
+    }
+</style>
 {% endblock %}

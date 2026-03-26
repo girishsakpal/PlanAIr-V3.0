@@ -7,6 +7,8 @@ from wtforms.validators import (DataRequired, Email, EqualTo, Length,
 from app.models.user import User
 
 
+from flask import current_app
+
 class SignupForm(FlaskForm):
     username = StringField('Username', validators=[
         DataRequired(),
@@ -24,6 +26,9 @@ class SignupForm(FlaskForm):
         DataRequired(),
         EqualTo('password', message='Passwords must match')
     ])
+    promo_code = StringField('Promo Code', validators=[
+        DataRequired(message='A promo code is required to sign up')
+    ])
     terms = BooleanField('I agree to the Terms & Conditions', validators=[
         DataRequired(message='You must accept the Terms & Conditions')
     ])
@@ -38,6 +43,11 @@ class SignupForm(FlaskForm):
         user = User.query.filter_by(email=email.data).first()
         if user:
             raise ValidationError('Email already registered. Please log in instead.')
+
+    def validate_promo_code(self, promo_code):
+        valid_code = current_app.config.get('SIGNUP_PROMO_CODE', '')
+        if promo_code.data.strip().upper() != valid_code.upper():
+            raise ValidationError('Invalid promo code.')
 
 
 class LoginForm(FlaskForm):
