@@ -59,11 +59,6 @@ def signup():
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('tasks.dashboard'))
-    
-    if user and user.check_password(form.password.data):
-        user.last_login = datetime.utcnow()
-        db.session.commit()
-        login_user(user, remember=form.remember.data)
 
     form = LoginForm()
     if form.validate_on_submit():
