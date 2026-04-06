@@ -29,9 +29,7 @@ class SignupForm(FlaskForm):
     promo_code = StringField('Promo Code', validators=[
         DataRequired(message='A promo code is required to sign up')
     ])
-    terms = BooleanField('I agree to the Terms & Conditions', validators=[
-        DataRequired(message='You must accept the Terms & Conditions')
-    ])
+    terms = BooleanField('I agree to the Terms & Conditions')
     submit = SubmitField('Create Account')
 
     def validate_username(self, username):

@@ -59,9 +59,12 @@
             </div>
 
             <div class="form-group form-group--checkbox">
-                {{ form.terms(class="form-checkbox") }}
-                <label for="terms">
-                    I agree to the <a href="#" class="link">Terms &amp; Conditions</a>
+                {{ form.terms(class="form-checkbox", id="terms-checkbox", disabled="true") }}
+                <label for="terms-checkbox">
+                    I agree to the
+                    <a href="#" class="link" onclick="openTermsModal(event)">
+                        Terms &amp; Conditions
+                    </a>
                 </label>
                 {% for error in form.terms.errors %}
                 <span class="form-error">{{ error }}</span>
@@ -77,6 +80,69 @@
             Already have an account?
             <a href="{{ url_for('auth.login') }}" class="link">Log in</a>
         </p>
+    </div>
+</div>
+
+<!-- terms modal -->
+<div class="modal-overlay" id="terms-modal" onclick="closeTermsModal()">
+    <div class="modal terms-modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h3>Terms &amp; Conditions</h3>
+            <button class="modal-close" onclick="closeTermsModal()">&times;</button>
+        </div>
+
+        <div class="terms-body">
+            <p class="terms-updated">Last updated: March 2026</p>
+
+            <h4>1. Acceptance of Terms</h4>
+            <p>By creating an account on PlanAIr, you agree to these Terms &amp; Conditions. If you do not agree, do not
+                use this application.</p>
+
+            <h4>2. Eligibility</h4>
+            <p>PlanAIr is an invite-only application. Access requires a valid promo code. You must be at least 13 years
+                of age to use this service.</p>
+
+            <h4>3. User Accounts</h4>
+            <p>You are responsible for maintaining the confidentiality of your account credentials. You must not share
+                your account with others. You are responsible for all activity that occurs under your account. PlanAIr
+                reserves the right to suspend or terminate accounts that violate these terms.</p>
+
+            <h4>4. Data and Privacy</h4>
+            <p>PlanAIr stores the following data associated with your account: your username, email address, tasks,
+                schedules, mood logs, and productivity scores. This data is used solely to provide the scheduling and
+                productivity features of the application. Your data is not sold, shared, or disclosed to any third
+                party. Your password is stored as a secure hash and is never accessible in plain text by anyone,
+                including the developers.</p>
+
+            <h4>5. Acceptable Use</h4>
+            <p>You agree not to attempt to access other users' data, reverse engineer or exploit the application, use
+                the application for any unlawful purpose, or attempt to disrupt the service.</p>
+
+            <h4>6. Data Retention</h4>
+            <p>Your data is retained for as long as your account exists. You may request deletion of your account and
+                all associated data at any time by contacting the administrator.</p>
+
+            <h4>7. Limitation of Liability</h4>
+            <p>PlanAIr is provided as-is for personal productivity purposes. The developers make no guarantees regarding
+                uptime, data persistence, or fitness for any particular purpose. The developers are not liable for any
+                loss of data or productivity resulting from use of the application.</p>
+
+            <h4>8. Changes to Terms</h4>
+            <p>These terms may be updated periodically. Continued use of the application after changes constitutes
+                acceptance of the new terms.</p>
+
+            <h4>9. Contact</h4>
+            <p>For any questions regarding these terms, contact the administrator.</p>
+        </div>
+
+        <div class="terms-footer">
+            <p class="terms-hint">
+                Scroll through the terms above before accepting.
+            </p>
+            <button class="btn btn-primary btn-full" onclick="acceptTerms()">
+                I have read and agree
+            </button>
+        </div>
     </div>
 </div>
 {% endblock %}
@@ -118,4 +184,39 @@
         pointer-events: none;
     }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function openTermsModal(e) {
+        e.preventDefault();
+        document.getElementById('terms-modal').style.display = 'flex';
+    }
+
+    function closeTermsModal() {
+        document.getElementById('terms-modal').style.display = 'none';
+    }
+
+    function acceptTerms() {
+        const checkbox = document.getElementById('terms-checkbox');
+        checkbox.disabled = false;
+        checkbox.checked = true;
+        closeTermsModal();
+
+        // visual confirmation
+        const label = checkbox.nextElementSibling;
+        if (label) {
+            label.style.color = 'var(--primary)';
+        }
+    }
+
+    // prevent form submission if terms not checked
+    document.querySelector('form').addEventListener('submit', function (e) {
+        const cb = document.getElementById('terms-checkbox');
+        if (!cb.checked) {
+            e.preventDefault();
+            alert('Please read and accept the Terms & Conditions to continue.');
+        }
+    });
+</script>
 {% endblock %}

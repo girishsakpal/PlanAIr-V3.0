@@ -38,6 +38,10 @@ def signup():
 
     form = SignupForm()
     if form.validate_on_submit():
+        if not form.terms.data:
+            flash('You must accept the Terms & Conditions.', 'danger')
+            return render_template('auth/signup.html', form=form)
+        
         user = User(
             username=form.username.data,
             email=form.email.data.lower()
