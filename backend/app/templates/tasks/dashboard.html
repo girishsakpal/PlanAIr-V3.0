@@ -17,8 +17,7 @@
             {% else %}&#128161;{% endif %}
         </div>
         <span class="suggestion-text">{{ s.message }}</span>
-        <button class="suggestion-dismiss"
-                onclick="dismissSuggestion({{ s.id }})">&times;</button>
+        <button class="suggestion-dismiss" onclick="dismissSuggestion({{ s.id }})">&times;</button>
     </div>
     {% endfor %}
 </div>
@@ -37,6 +36,9 @@
         </p>
     </div>
     <div class="dash-greeting-right">
+        <a href="{{ url_for('schedule.busy_hours_setup') }}" class="btn btn-outline btn-sm">
+            Edit busy hours
+        </a>
         <form method="POST" action="{{ url_for('schedule.generate_schedule') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-outline btn-sm">
@@ -57,14 +59,14 @@
         <div class="dash-card-label">How are you feeling?</div>
         <div class="mood-selector">
             {% for score, emoji, label in [
-                (1, '😞', 'Rough'),
-                (2, '😕', 'Low'),
-                (3, '😐', 'Okay'),
-                (4, '🙂', 'Good'),
-                (5, '😄', 'Great')
+            (1, '😞', 'Rough'),
+            (2, '😕', 'Low'),
+            (3, '😐', 'Okay'),
+            (4, '🙂', 'Good'),
+            (5, '😄', 'Great')
             ] %}
             <button class="mood-btn {% if mood and mood.mood_score == score %}mood-btn--active{% endif %}"
-                    onclick="logMood({{ score }})" title="{{ label }}">
+                onclick="logMood({{ score }})" title="{{ label }}">
                 {{ emoji }}<span>{{ label }}</span>
             </button>
             {% endfor %}
@@ -79,10 +81,9 @@
             <div class="score-circle">
                 <svg viewBox="0 0 36 36" class="score-svg">
                     <path class="score-bg"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                    <path class="score-fill"
-                        stroke-dasharray="{{ productivity.score }}, 100"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                    <path class="score-fill" stroke-dasharray="{{ productivity.score }}, 100"
+                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                     <text x="18" y="20.35" class="score-text">{{ productivity.score | int }}%</text>
                 </svg>
             </div>

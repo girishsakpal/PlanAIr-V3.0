@@ -31,6 +31,7 @@
             <a href="{{ url_for('tasks.matrix') }}">Matrix</a>
             <a href="{{ url_for('schedule.schedule_view') }}">Schedule</a>
             <a href="{{ url_for('schedule.week_view') }}">Week</a>
+            <a href="{{ url_for('schedule.busy_hours_setup') }}">Busy Hours</a>
             <a href="{{ url_for('insights.insights') }}">Insights</a>
         </div>
 
@@ -40,8 +41,23 @@
                 <span class="icon-sun">&#9788;</span>
                 <span class="icon-moon">&#9790;</span>
             </button>
-            <span class="nav-username">{{ current_user.username }}</span>
-            <a href="{{ url_for('auth.logout') }}" class="btn btn-outline">Log out</a>
+
+            <div class="profile-dropdown">
+                <button class="profile-btn" onclick="toggleProfileMenu()">
+                    <span class="profile-avatar">{{ current_user.username[0].upper() }}</span>
+                    <span class="profile-name">{{ current_user.username }}</span>
+                    <span>&#9660;</span>
+                </button>
+                <div class="profile-menu" id="profile-menu">
+                    <a href="{{ url_for('schedule.busy_hours_setup') }}" class="profile-menu-item">
+                        &#128336; Edit busy hours
+                    </a>
+                    <div class="profile-menu-divider"></div>
+                    <a href="{{ url_for('auth.logout') }}" class="profile-menu-item profile-menu-item--danger">
+                        &#8594; Log out
+                    </a>
+                </div>
+            </div>
         </div>
         {% endif %}
     </nav>

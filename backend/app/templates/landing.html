@@ -2,578 +2,721 @@
 {% block title %}PlanAIr — Smart Productivity Planner{% endblock %}
 
 {% block content %}
+<div class="landing-page">
 
-<!-- hero -->
-<section class="hero">
-    <div class="hero-badge">AI-powered productivity</div>
-    <img src="{{ url_for('static', filename='images/logo.png') }}" alt="PlanAIr" class="hero-logo">
-    <h1 class="hero-title">Plan smarter.<br>Work better.</h1>
-    <p class="hero-subtitle">
-        Intelligent scheduling that respects your time, adapts to your mood,
-        and helps you focus on what actually matters.
-    </p>
-    <div class="hero-actions">
-        <a href="{{ url_for('auth.signup') }}" class="btn btn-primary btn-hero">
-            Get started free
-        </a>
-        <a href="{{ url_for('auth.login') }}" class="btn btn-ghost btn-hero">
-            Log in →
-        </a>
+    <!-- dark hero section -->
+    <div class="hero-wrap">
+        <div class="hero-inner">
+            <div class="hero-badge">&#10024; AI-powered productivity</div>
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="PlanAIr" class="hero-logo">
+            <h1 class="hero-title">
+                Plan <span>smarter.</span><br>Work <span>better.</span>
+            </h1>
+            <p class="hero-subtitle">
+                Intelligent scheduling that respects your time, adapts to your mood,
+                and helps you focus on what actually matters.
+            </p>
+            <div class="hero-actions">
+                <a href="{{ url_for('auth.signup') }}" class="btn-hero-primary">
+                    Get started free →
+                </a>
+                <a href="{{ url_for('auth.login') }}" class="btn-hero-secondary">
+                    Log in
+                </a>
+            </div>
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <span class="hero-stat-num">{{ total_users }}</span>
+                    <span class="hero-stat-label">Users planning</span>
+                </div>
+                <div class="hero-stat-divider"></div>
+                <div class="hero-stat">
+                    <span class="hero-stat-num">{{ total_tasks }}</span>
+                    <span class="hero-stat-label">Tasks created</span>
+                </div>
+                <div class="hero-stat-divider"></div>
+                <div class="hero-stat">
+                    <span class="hero-stat-num">{{ total_sessions }}</span>
+                    <span class="hero-stat-label">Sessions done</span>
+                </div>
+                <div class="hero-stat-divider"></div>
+                <div class="hero-stat">
+                    <span class="hero-stat-num">{{ active_week }}</span>
+                    <span class="hero-stat-label">Active this week</span>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- live platform stats -->
-    <div class="hero-stats">
-        <div class="hero-stat">
-            <span class="hero-stat-num">{{ total_users }}</span>
-            <span class="hero-stat-label">Users planning</span>
-        </div>
-        <div class="hero-stat-divider"></div>
-        <div class="hero-stat">
-            <span class="hero-stat-num">{{ total_tasks }}</span>
-            <span class="hero-stat-label">Tasks created</span>
-        </div>
-        <div class="hero-stat-divider"></div>
-        <div class="hero-stat">
-            <span class="hero-stat-num">{{ total_sessions }}</span>
-            <span class="hero-stat-label">Sessions completed</span>
-        </div>
-        <div class="hero-stat-divider"></div>
-        <div class="hero-stat">
-            <span class="hero-stat-num">{{ active_week }}</span>
-            <span class="hero-stat-label">Active this week</span>
-        </div>
+    <!-- social proof bar -->
+    {% if total_users > 0 %}
+    <div class="social-proof">
+        <span class="social-proof-dot"></span>
+        {% if total_users == 1 %}
+        1 person is already planning smarter with PlanAIr.
+        {% elif total_users < 10 %} {{ total_users }} people are already planning smarter with PlanAIr. {% else %} Join
+            {{ total_users }}+ people planning smarter with PlanAIr. {% endif %} </div>
+            {% endif %}
+
+            <!-- body content -->
+            <div class="landing-body">
+
+                <!-- features -->
+                <section class="features-section">
+                    <h2 class="features-heading">Everything you need to stay on track</h2>
+                    <p class="features-subheading">
+                        Built around science-backed frameworks, not just a list.
+                    </p>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon feature-icon--red">&#9888;</div>
+                            <h3>Eisenhower Matrix</h3>
+                            <p>Tasks automatically sorted into urgent, important, delegate and avoid quadrants so you
+                                always know what to do first.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon feature-icon--blue">&#128336;</div>
+                            <h3>Smart Scheduling</h3>
+                            <p>Work distributed across your free hours only — with 15-minute breaks built in and
+                                sessions never overlapping your commitments.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon feature-icon--purple">&#128149;</div>
+                            <h3>Mood-Aware Planning</h3>
+                            <p>Feeling low? PlanAIr automatically shortens sessions and lightens your load for the day
+                                without you having to ask.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon feature-icon--green">&#128200;</div>
+                            <h3>Productivity Insights</h3>
+                            <p>Weekly trend charts, peak hour heatmaps, and workload distribution so you can understand
+                                and improve your patterns.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon feature-icon--amber">&#128293;</div>
+                            <h3>Streak Tracking</h3>
+                            <p>Daily streaks and milestone suggestions keep you consistent. The app celebrates when you
+                                hit 3, 7, 14, and 30 day streaks.</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon feature-icon--teal">&#9989;</div>
+                            <h3>Hour-Level Progress</h3>
+                            <p>Log actual hours worked per session. Tasks auto-complete when your total hours are done —
+                                no manual status changes needed.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- how it works -->
+                <section class="how-section">
+                    <h2 class="features-heading" style="margin-bottom:0.5rem">How it works</h2>
+                    <p class="features-subheading">Four steps from signup to a fully planned week.</p>
+                    <div class="how-steps">
+                        <div class="how-step">
+                            <div class="how-num">1</div>
+                            <div class="how-text">
+                                <h4>Set your busy hours</h4>
+                                <p>Mark when you're unavailable once on a visual grid. PlanAIr never schedules there
+                                    again.</p>
+                            </div>
+                        </div>
+                        <div class="how-arrow">→</div>
+                        <div class="how-step">
+                            <div class="how-num">2</div>
+                            <div class="how-text">
+                                <h4>Add your tasks</h4>
+                                <p>Set urgency, importance, estimated hours, and an optional deadline.</p>
+                            </div>
+                        </div>
+                        <div class="how-arrow">→</div>
+                        <div class="how-step">
+                            <div class="how-num">3</div>
+                            <div class="how-text">
+                                <h4>Generate schedule</h4>
+                                <p>One click splits all tasks intelligently across your free time over 14 days.</p>
+                            </div>
+                        </div>
+                        <div class="how-arrow">→</div>
+                        <div class="how-step">
+                            <div class="how-num">4</div>
+                            <div class="how-text">
+                                <h4>Log and track</h4>
+                                <p>Log actual hours per session and watch your productivity score grow daily.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- platform analytics -->
+                <section class="analytics-section">
+                    <h2 class="features-heading">Real activity on the platform</h2>
+                    <p class="features-subheading">Live numbers from the database.</p>
+                    <div class="analytics-grid">
+                        <div class="analytics-card analytics-card--primary">
+                            <div class="analytics-big-num">{{ total_users }}</div>
+                            <div class="analytics-label">Total users</div>
+                            <div class="analytics-sub">People who trust PlanAIr</div>
+                        </div>
+                        <div class="analytics-card">
+                            <div class="analytics-big-num">{{ total_tasks }}</div>
+                            <div class="analytics-label">Tasks created</div>
+                            <div class="analytics-sub">Across all users</div>
+                        </div>
+                        <div class="analytics-card analytics-card--accent">
+                            <div class="analytics-big-num">{{ total_sessions }}</div>
+                            <div class="analytics-label">Sessions completed</div>
+                            <div class="analytics-sub">Work sessions logged</div>
+                        </div>
+                        <div class="analytics-card">
+                            <div class="analytics-big-num">{{ active_week }}</div>
+                            <div class="analytics-label">Active this week</div>
+                            <div class="analytics-sub">Users logged in recently</div>
+                        </div>
+                        <div class="analytics-card">
+                            <div class="analytics-big-num">14</div>
+                            <div class="analytics-label">Day planning window</div>
+                            <div class="analytics-sub">Sessions scheduled ahead</div>
+                        </div>
+                        <div class="analytics-card">
+                            <div class="analytics-big-num">15min</div>
+                            <div class="analytics-label">Break buffers</div>
+                            <div class="analytics-sub">Between every session</div>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+            <!-- dark CTA footer -->
+            <div class="cta-section">
+                <div class="cta-inner">
+                    <h2>Ready to plan smarter?</h2>
+                    <p>Invite only — request a promo code to get started.</p>
+                    <a href="{{ url_for('auth.signup') }}" class="btn-hero-primary">
+                        Create your account →
+                    </a>
+                </div>
+            </div>
+
     </div>
-</section>
+    {% endblock %}
 
-<!-- social proof banner -->
-{% if total_users > 0 %}
-<div class="social-proof">
-    <span class="social-proof-dot"></span>
-    {% if total_users == 1 %}
-    1 person is already planning smarter with PlanAIr.
-    {% elif total_users < 10 %} {{ total_users }} people are already planning smarter with PlanAIr. {% else %} Join {{
-        total_users }}+ people planning smarter with PlanAIr. {% endif %} </div>
-        {% endif %}
+    {% block extra_css %}
+    <style>
+        /* ── hero section ── */
+        .landing-page {
+            margin: -2rem -3rem 0;
+        }
 
-        <!-- features -->
-        <section class="features-section">
-            <h2 class="features-heading">Everything you need to stay on track</h2>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon feature-icon--red">&#9888;</div>
-                    <h3>Eisenhower Matrix</h3>
-                    <p>Tasks automatically sorted into urgent, important, delegate and avoid quadrants.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon feature-icon--blue">&#128336;</div>
-                    <h3>Smart Scheduling</h3>
-                    <p>Work distributed across your free hours only — never overlapping your busy blocks.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon feature-icon--purple">&#128149;</div>
-                    <h3>Mood-Aware Planning</h3>
-                    <p>Feeling low? PlanAIr automatically lightens your load and adjusts session length.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon feature-icon--green">&#128200;</div>
-                    <h3>Productivity Insights</h3>
-                    <p>Charts showing your trends, peak hours, and workload distribution across the week.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon feature-icon--amber">&#128293;</div>
-                    <h3>Streak Tracking</h3>
-                    <p>Stay consistent with daily streaks and smart suggestions that keep you motivated.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon feature-icon--teal">&#9989;</div>
-                    <h3>Progress Tracking</h3>
-                    <p>Log actual hours worked per session. Tasks complete automatically when done.</p>
-                </div>
-            </div>
-        </section>
+        .hero-wrap {
+            background: linear-gradient(135deg, #0f0c29, #1a1560, #302b8a);
+            padding: 5rem 3rem 4rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
 
-        <!-- how it works -->
-        <section class="how-section">
-            <h2 class="features-heading">How it works</h2>
-            <div class="how-steps">
-                <div class="how-step">
-                    <div class="how-num">1</div>
-                    <div class="how-text">
-                        <h4>Set your busy hours</h4>
-                        <p>Mark when you're unavailable once. PlanAIr never schedules there.</p>
-                    </div>
-                </div>
-                <div class="how-arrow">→</div>
-                <div class="how-step">
-                    <div class="how-num">2</div>
-                    <div class="how-text">
-                        <h4>Add your tasks</h4>
-                        <p>Set urgency, importance, estimated hours and deadline.</p>
-                    </div>
-                </div>
-                <div class="how-arrow">→</div>
-                <div class="how-step">
-                    <div class="how-num">3</div>
-                    <div class="how-text">
-                        <h4>Generate your schedule</h4>
-                        <p>Tasks split intelligently across your free time over 14 days.</p>
-                    </div>
-                </div>
-                <div class="how-arrow">→</div>
-                <div class="how-step">
-                    <div class="how-num">4</div>
-                    <div class="how-text">
-                        <h4>Log and track</h4>
-                        <p>Check off sessions, log actual hours, watch your productivity grow.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
+        .hero-wrap::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
 
-        <!-- platform analytics section -->
-        <section class="analytics-section">
-            <h2 class="features-heading">Real activity on the platform</h2>
-            <div class="analytics-grid">
+        .hero-inner {
+            max-width: 700px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
 
-                <div class="analytics-card analytics-card--primary">
-                    <div class="analytics-big-num">{{ total_users }}</div>
-                    <div class="analytics-label">Total users</div>
-                    <div class="analytics-sub">People who trust PlanAIr</div>
-                </div>
+        .hero-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.1);
+            color: #a5b4fc;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            padding: 0.3rem 0.85rem;
+            margin-bottom: 1rem;
+            letter-spacing: 0.04em;
+            backdrop-filter: blur(4px);
+        }
 
-                <div class="analytics-card">
-                    <div class="analytics-big-num">{{ total_tasks }}</div>
-                    <div class="analytics-label">Tasks created</div>
-                    <div class="analytics-sub">Across all users</div>
-                </div>
+        .hero-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 1rem;
+            display: block;
+            box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.1), 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
 
-                <div class="analytics-card">
-                    <div class="analytics-big-num">{{ total_sessions }}</div>
-                    <div class="analytics-label">Sessions completed</div>
-                    <div class="analytics-sub">Work sessions logged</div>
-                </div>
+        .hero-title {
+            font-size: 3.4rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1rem;
+            letter-spacing: -0.03em;
+            color: #ffffff;
+        }
 
-                <div class="analytics-card analytics-card--accent">
-                    <div class="analytics-big-num">{{ active_week }}</div>
-                    <div class="analytics-label">Active this week</div>
-                    <div class="analytics-sub">Users logged in recently</div>
-                </div>
+        .hero-title span {
+            background: linear-gradient(90deg, #a78bfa, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
 
-                <div class="analytics-card">
-                    <div class="analytics-big-num">14</div>
-                    <div class="analytics-label">Day planning window</div>
-                    <div class="analytics-sub">Sessions scheduled ahead</div>
-                </div>
+        .hero-subtitle {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.7);
+            max-width: 500px;
+            margin: 0 auto 2rem;
+            line-height: 1.7;
+        }
 
-                <div class="analytics-card">
-                    <div class="analytics-big-num">15min</div>
-                    <div class="analytics-label">Break buffers</div>
-                    <div class="analytics-sub">Between every session</div>
-                </div>
+        .hero-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 2.5rem;
+        }
 
-            </div>
-        </section>
+        .btn-hero-primary {
+            background: white;
+            color: #312e81;
+            padding: 0.8rem 2rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            border: none;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+            text-decoration: none;
+            display: inline-block;
+        }
 
-        <!-- final CTA -->
-        <section class="cta-section">
-            <h2>Ready to plan smarter?</h2>
-            <p>Free to use. Invite only — request a promo code to get started.</p>
-            <a href="{{ url_for('auth.signup') }}" class="btn btn-primary btn-hero">
-                Create your account
-            </a>
-        </section>
+        .btn-hero-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            text-decoration: none;
+            color: #312e81;
+        }
 
-        {% endblock %}
+        .btn-hero-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 0.8rem 2rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: background 0.15s;
+            text-decoration: none;
+            display: inline-block;
+            backdrop-filter: blur(4px);
+        }
 
-        {% block extra_css %}
-        <style>
-            .hero {
-                text-align: center;
-                padding: 3.5rem 1rem 2rem;
-                max-width: 700px;
-                margin: 0 auto;
+        .btn-hero-secondary:hover {
+            background: rgba(255, 255, 255, 0.18);
+            text-decoration: none;
+            color: white;
+        }
+
+        /* stats strip inside hero */
+        .hero-stats {
+            display: inline-flex;
+            align-items: center;
+            gap: 2rem;
+            padding: 1rem 2.5rem;
+            background: rgba(255, 255, 255, 0.07);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
+            backdrop-filter: blur(8px);
+        }
+
+        .hero-stat-num {
+            display: block;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .hero-stat-label {
+            display: block;
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.55);
+            margin-top: 0.1rem;
+        }
+
+        .hero-stat-divider {
+            width: 1px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* social proof */
+        .social-proof {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .social-proof-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+            flex-shrink: 0;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1)
             }
 
-            .hero-badge {
-                display: inline-block;
-                background: rgba(99, 102, 241, 0.1);
-                color: var(--primary);
-                border: 1px solid rgba(99, 102, 241, 0.25);
-                border-radius: 20px;
-                font-size: 0.78rem;
-                font-weight: 500;
-                padding: 0.3rem 0.85rem;
-                margin-bottom: 0.85rem;
-                letter-spacing: 0.02em;
+            50% {
+                opacity: 0.6;
+                transform: scale(1.3)
+            }
+        }
+
+        /* body sections */
+        .landing-body {
+            padding: 0 3rem;
+        }
+
+        @media(max-width:768px) {
+            .landing-body {
+                padding: 0 1rem;
             }
 
-            .hero-logo {
-                width: 72px;
-                height: 72px;
-                border-radius: 50%;
-                object-fit: cover;
-                margin: 0 auto 0.85rem;
-                display: block;
-                box-shadow: 0 0 0 5px rgba(99, 102, 241, 0.1);
+            .hero-wrap {
+                padding: 3rem 1.5rem;
             }
 
             .hero-title {
-                font-size: 3.2rem;
-                font-weight: 700;
-                line-height: 1.15;
-                margin-bottom: 1rem;
-                letter-spacing: -0.02em;
-            }
-
-            .hero-subtitle {
-                font-size: 1.1rem;
-                color: var(--text-muted);
-                max-width: 480px;
-                margin: 0 auto 2rem;
-                line-height: 1.7;
-            }
-
-            .hero-actions {
-                display: flex;
-                gap: 0.75rem;
-                justify-content: center;
-                flex-wrap: wrap;
-                margin-bottom: 2rem;
-            }
-
-            .btn-hero {
-                padding: 0.75rem 1.75rem;
-                font-size: 1rem;
-                border-radius: 12px;
-            }
-
-            .btn-ghost {
-                background: transparent;
-                border: none;
-                color: var(--primary);
-                font-weight: 500;
-            }
-
-            .btn-ghost:hover {
-                background: rgba(99, 102, 241, 0.06);
-                text-decoration: none;
-            }
-
-            /* live stats strip */
-            .hero-stats {
-                display: inline-flex;
-                align-items: center;
-                gap: 1.5rem;
-                padding: 1rem 2rem;
-                background: var(--bg-card);
-                border: 1px solid var(--border);
-                border-radius: 16px;
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-
-            .hero-stat {
-                text-align: center;
-            }
-
-            .hero-stat-num {
-                display: block;
-                font-size: 1.3rem;
-                font-weight: 700;
-                color: var(--primary);
-            }
-
-            .hero-stat-label {
-                display: block;
-                font-size: 0.72rem;
-                color: var(--text-muted);
-                margin-top: 0.1rem;
-            }
-
-            .hero-stat-divider {
-                width: 1px;
-                height: 32px;
-                background: var(--border);
-            }
-
-            /* social proof */
-            .social-proof {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 0.5rem;
-                margin: 1.5rem auto;
-                font-size: 0.88rem;
-                color: var(--text-muted);
-                max-width: 400px;
-            }
-
-            .social-proof-dot {
-                width: 8px;
-                height: 8px;
-                border-radius: 50%;
-                background: #22c55e;
-                flex-shrink: 0;
-                animation: pulse 2s infinite;
-            }
-
-            @keyframes pulse {
-
-                0%,
-                100% {
-                    opacity: 1;
-                    transform: scale(1)
-                }
-
-                50% {
-                    opacity: 0.6;
-                    transform: scale(1.3)
-                }
-            }
-
-            /* features */
-            .features-section {
-                padding: 3rem 0;
-            }
-
-            .features-heading {
-                text-align: center;
-                font-size: 1.6rem;
-                font-weight: 600;
-                margin-bottom: 2rem;
-            }
-
-            .features-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-                gap: 1.25rem;
-            }
-
-            .feature-card {
-                background: var(--bg-card);
-                border: 1px solid var(--border);
-                border-radius: 16px;
-                padding: 1.5rem;
-                transition: box-shadow 0.2s, transform 0.2s;
-            }
-
-            .feature-card:hover {
-                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
-                transform: translateY(-2px);
-            }
-
-            .feature-icon {
-                width: 40px;
-                height: 40px;
-                border-radius: 10px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 1.15rem;
-                margin-bottom: 0.85rem;
-            }
-
-            .feature-icon--red {
-                background: #fee2e2;
-            }
-
-            .feature-icon--blue {
-                background: #dbeafe;
-            }
-
-            .feature-icon--purple {
-                background: #ede9fe;
-            }
-
-            .feature-icon--green {
-                background: #dcfce7;
-            }
-
-            .feature-icon--amber {
-                background: #fef3c7;
-            }
-
-            .feature-icon--teal {
-                background: #d1fae5;
-            }
-
-            [data-theme="dark"] .feature-icon--red {
-                background: #7f1d1d;
-            }
-
-            [data-theme="dark"] .feature-icon--blue {
-                background: #1e3a5f;
-            }
-
-            [data-theme="dark"] .feature-icon--purple {
-                background: #2e1065;
-            }
-
-            [data-theme="dark"] .feature-icon--green {
-                background: #14532d;
-            }
-
-            [data-theme="dark"] .feature-icon--amber {
-                background: #78350f;
-            }
-
-            [data-theme="dark"] .feature-icon--teal {
-                background: #064e3b;
-            }
-
-            .feature-card h3 {
-                font-size: 0.95rem;
-                font-weight: 600;
-                margin-bottom: 0.4rem;
-            }
-
-            .feature-card p {
-                font-size: 0.85rem;
-                color: var(--text-muted);
-                line-height: 1.6;
-                margin: 0;
-            }
-
-            /* how it works */
-            .how-section {
-                padding: 3rem 0;
-            }
-
-            .how-steps {
-                display: flex;
-                align-items: flex-start;
-                gap: 0.5rem;
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-
-            .how-step {
-                display: flex;
-                gap: 1rem;
-                align-items: flex-start;
-                max-width: 200px;
-            }
-
-            .how-num {
-                width: 36px;
-                height: 36px;
-                border-radius: 50%;
-                background: var(--primary);
-                color: #fff;
-                font-weight: 700;
-                font-size: 0.9rem;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                flex-shrink: 0;
-            }
-
-            .how-text h4 {
-                font-size: 0.9rem;
-                font-weight: 600;
-                margin: 0 0 0.25rem;
-            }
-
-            .how-text p {
-                font-size: 0.8rem;
-                color: var(--text-muted);
-                margin: 0;
-                line-height: 1.5;
-            }
-
-            .how-arrow {
-                font-size: 1.2rem;
-                color: var(--text-muted);
-                padding-top: 8px;
-            }
-
-            @media(max-width:768px) {
-                .how-arrow {
-                    display: none;
-                }
-
-                .how-steps {
-                    gap: 1.5rem;
-                }
-            }
-
-            /* analytics section */
-            .analytics-section {
-                padding: 3rem 0;
-            }
-
-            .analytics-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-                gap: 1rem;
-            }
-
-            .analytics-card {
-                background: var(--bg-card);
-                border: 1px solid var(--border);
-                border-radius: 16px;
-                padding: 1.5rem 1.25rem;
-                text-align: center;
-                transition: transform 0.2s;
-            }
-
-            .analytics-card:hover {
-                transform: translateY(-2px);
-            }
-
-            .analytics-card--primary {
-                border-color: var(--primary);
-                box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.2);
-            }
-
-            .analytics-card--accent {
-                border-color: #22c55e;
-                box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.2);
-            }
-
-            .analytics-big-num {
                 font-size: 2.2rem;
-                font-weight: 700;
-                color: var(--primary);
-                margin-bottom: 0.3rem;
-                line-height: 1;
             }
 
-            .analytics-card--accent .analytics-big-num {
-                color: #16a34a;
+            .landing-page {
+                margin: -1rem -1rem 0;
             }
+        }
 
-            [data-theme="dark"] .analytics-card--accent .analytics-big-num {
-                color: #4ade80;
+        /* features */
+        .features-section {
+            padding: 4rem 0 3rem;
+        }
+
+        .features-heading {
+            text-align: center;
+            font-size: 1.7rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .features-subheading {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: box-shadow 0.2s, transform 0.2s;
+        }
+
+        .feature-card:hover {
+            box-shadow: 0 8px 32px rgba(99, 102, 241, 0.1);
+            transform: translateY(-3px);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .feature-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+
+        .feature-icon--red {
+            background: #fee2e2;
+        }
+
+        .feature-icon--blue {
+            background: #dbeafe;
+        }
+
+        .feature-icon--purple {
+            background: #ede9fe;
+        }
+
+        .feature-icon--green {
+            background: #dcfce7;
+        }
+
+        .feature-icon--amber {
+            background: #fef3c7;
+        }
+
+        .feature-icon--teal {
+            background: #d1fae5;
+        }
+
+        [data-theme="dark"] .feature-icon--red {
+            background: #7f1d1d;
+        }
+
+        [data-theme="dark"] .feature-icon--blue {
+            background: #1e3a5f;
+        }
+
+        [data-theme="dark"] .feature-icon--purple {
+            background: #2e1065;
+        }
+
+        [data-theme="dark"] .feature-icon--green {
+            background: #14532d;
+        }
+
+        [data-theme="dark"] .feature-icon--amber {
+            background: #78350f;
+        }
+
+        [data-theme="dark"] .feature-icon--teal {
+            background: #064e3b;
+        }
+
+        .feature-card h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+        }
+
+        .feature-card p {
+            font-size: 0.87rem;
+            color: var(--text-muted);
+            line-height: 1.65;
+            margin: 0;
+        }
+
+        /* how it works */
+        .how-section {
+            padding: 3rem 0;
+            background: var(--bg-secondary);
+            margin: 0 -3rem;
+            padding-left: 3rem;
+            padding-right: 3rem;
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        @media(max-width:768px) {
+            .how-section {
+                margin: 0 -1rem;
+                padding-left: 1rem;
+                padding-right: 1rem;
             }
+        }
 
-            .analytics-label {
-                font-size: 0.88rem;
-                font-weight: 600;
-                color: var(--text);
-                margin-bottom: 0.2rem;
+        .how-steps {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .how-step {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            flex: 1;
+            min-width: 180px;
+            max-width: 220px;
+        }
+
+        .how-num {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .how-text h4 {
+            font-size: 0.92rem;
+            font-weight: 600;
+            margin: 0 0 0.3rem;
+        }
+
+        .how-text p {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin: 0;
+            line-height: 1.55;
+        }
+
+        .how-arrow {
+            font-size: 1.4rem;
+            color: var(--text-muted);
+            padding-top: 10px;
+            flex-shrink: 0;
+        }
+
+        @media(max-width:768px) {
+            .how-arrow {
+                display: none;
             }
+        }
 
-            .analytics-sub {
-                font-size: 0.75rem;
-                color: var(--text-muted);
-            }
+        /* analytics */
+        .analytics-section {
+            padding: 4rem 0;
+        }
 
-            /* final cta */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            max-width: 100%;
+        }
+
+        .analytics-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .analytics-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+        }
+
+        .analytics-card--primary {
+            border-color: rgba(99, 102, 241, 0.4);
+            background: rgba(99, 102, 241, 0.04);
+        }
+
+        .analytics-card--accent {
+            border-color: rgba(34, 197, 94, 0.4);
+            background: rgba(34, 197, 94, 0.04);
+        }
+
+        .analytics-big-num {
+            font-size: 2.4rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 0.3rem;
+            line-height: 1;
+        }
+
+        .analytics-card--accent .analytics-big-num {
+            color: #16a34a;
+        }
+
+        [data-theme="dark"] .analytics-card--accent .analytics-big-num {
+            color: #4ade80;
+        }
+
+        .analytics-label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 0.25rem;
+        }
+
+        .analytics-sub {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* final cta */
+        .cta-section {
+            background: linear-gradient(135deg, #0f0c29, #1a1560, #302b8a);
+            margin: 0 -3rem;
+            padding: 4rem 3rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @media(max-width:768px) {
             .cta-section {
-                text-align: center;
-                padding: 3rem 1rem 4rem;
+                margin: 0 -1rem;
+                padding: 3rem 1.5rem;
             }
+        }
 
-            .cta-section h2 {
-                font-size: 1.8rem;
-                font-weight: 700;
-                margin-bottom: 0.5rem;
-            }
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
 
-            .cta-section p {
-                color: var(--text-muted);
-                margin-bottom: 1.5rem;
-            }
-        </style>
-        {% endblock %}
+        .cta-inner {
+            position: relative;
+            z-index: 1;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .cta-section h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: #ffffff;
+        }
+
+        .cta-section p {
+            color: rgba(255, 255, 255, 0.65);
+            margin-bottom: 1.75rem;
+            font-size: 1rem;
+        }
+    </style>
+    {% endblock %}
