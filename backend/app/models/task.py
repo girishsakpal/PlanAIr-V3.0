@@ -21,9 +21,11 @@ class Task(db.Model):
     quadrant        = db.Column(db.String(30), nullable=True)
     created_at      = db.Column(db.DateTime, default=datetime.utcnow)
     completed_hours = db.Column(db.Float, default=0.0)
-
-    sessions    = db.relationship('ScheduleSession', backref='task', lazy=True)
-    suggestions = db.relationship('Suggestion', backref='task', lazy=True)
+    
+    sessions    = db.relationship('ScheduleSession', backref='task', lazy=True,
+                                cascade='all, delete-orphan')
+    suggestions = db.relationship('Suggestion', backref='task', lazy=True,
+                                cascade='all, delete-orphan')
 
     def compute_quadrant(self):
         if self.urgency >= 3 and self.importance >= 3:
@@ -34,3 +36,25 @@ class Task(db.Model):
             return 'delegate'
         else:
             return 'avoid'
+        
+
+
+class TaskDependency(db.Model):
+    __tablename__ = 'task_dependencies'
+
+    id             = db.Column(db.Integer, primary_key=True)
+    user_id        = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    task_id        = db.Column(db.Integer, db.ForeignKey('tasks.id'), nullable=False)
+    depends_on_id  = db.Column(db.Integer, db.ForeignKey('tasks.id'), nullable=False)
+    created_at     = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # relationships
+    task        = db.relationship('Task', foreign_keys=[task_id],
+                                  backref='dependencies')
+    depends_on  = db.relationship('Task', foreign_keys=[depends_on_id],
+                                  backref='dependents')
+
+    # prevent duplicate dependency entries
+    __table_args__ = (
+        db.UniqueConstraint('task_id', 'depends_on_id', name='unique_dependency'),
+    )

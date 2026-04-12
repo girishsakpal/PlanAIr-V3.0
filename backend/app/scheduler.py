@@ -1,6 +1,6 @@
 from datetime import date, time, timedelta, datetime
 from app.models.schedule import BusyHours, ScheduleSession
-from app.models.task import Task
+from app.models.task import Task, TaskDependency
 from app.models.mood import MoodLog
 from app import db
 
@@ -8,8 +8,8 @@ from app import db
 BREAK_MINUTES     = 15
 MIN_SESSION_MIN   = 30
 MAX_SESSION_MIN   = 120
-WORKING_START_HR  = 6   # 06:00
-WORKING_END_HR    = 23  # 23:00
+WORKING_START_HR  = 6    # 06:00
+WORKING_END_HR    = 23   # 23:00
 
 
 # ── time utilities ────────────────────────────────────────────────────────────
@@ -36,9 +36,9 @@ def get_free_slots(user_id, target_date):
 
     # for today, don't schedule in the past
     if target_date == date.today():
-        now         = datetime.now()
-        now_minutes = now.hour * 60 + now.minute
-        now_minutes = ((now_minutes + 14) // 15) * 15
+        now           = datetime.now()
+        now_minutes   = now.hour * 60 + now.minute
+        now_minutes   = ((now_minutes + 14) // 15) * 15
         working_start = max(working_start, now_minutes)
 
     # if working window has collapsed (e.g. it's 11pm), return empty
@@ -106,17 +106,13 @@ def find_next_slot(user_id, target_date, duration_minutes):
     booked = get_booked_blocks(user_id, target_date)
 
     for slot_start, slot_end in free_slots:
-        # available space within this free slot
         cursor = slot_start
 
         for b_start, b_end in booked:
-            # booked block is entirely before this slot
             if b_end <= slot_start:
                 continue
-            # booked block is entirely after this slot
             if b_start >= slot_end:
                 break
-            # gap before this booked block
             if b_start > cursor:
                 gap = min(b_start, slot_end) - cursor
                 if gap >= duration_minutes:
@@ -126,7 +122,6 @@ def find_next_slot(user_id, target_date, duration_minutes):
                     )
             cursor = max(cursor, b_end)
 
-        # remaining space after all booked blocks in this slot
         remaining = slot_end - cursor
         if remaining >= duration_minutes:
             return (
@@ -141,8 +136,7 @@ def get_available_minutes_on_day(user_id, target_date):
     """
     Returns total schedulable minutes on a day —
     free time minus already booked time (including breaks).
-    Does NOT add break after the last session since there's
-    nothing after it.
+    Does NOT add break after the last session.
     """
     free_total = sum(
         e - s for s, e in get_free_slots(user_id, target_date)
@@ -156,12 +150,10 @@ def get_available_minutes_on_day(user_id, target_date):
     if not existing:
         return free_total
 
-    # only add break buffer between sessions, not after the last one
     booked_total = sum(
         time_to_minutes(s.end_time) - time_to_minutes(s.start_time)
         for s in existing
     )
-    # add breaks between sessions (n-1 breaks for n sessions)
     breaks_total = (len(existing) - 1) * BREAK_MINUTES
 
     return max(0, free_total - booked_total - breaks_total)
@@ -172,14 +164,13 @@ def get_available_minutes_on_day(user_id, target_date):
 def priority_score(task):
     """
     All quadrants get scheduled — priority only affects ORDER.
-    do_now first, then schedule, then delegate, then avoid.
     Deadline proximity adds urgency boost.
     """
     quadrant_weights = {
         'do_now':   100,
         'schedule':  75,
         'delegate':  50,
-        'avoid':     25,   # still gets scheduled, just last
+        'avoid':     25,
     }
     score = quadrant_weights.get(task.quadrant or 'avoid', 25)
 
@@ -208,11 +199,8 @@ def get_today_mood(user_id):
 def get_mood_settings(user_id):
     """
     Returns (max_session_minutes, skip_quadrants_today) based on mood.
-    Low mood: shorter sessions, skip avoid+delegate today.
-    Good mood: allow longer sessions.
     """
     mood = get_today_mood(user_id)
-
     if mood <= 2:
         return 45, ['delegate', 'avoid']
     elif mood == 3:
@@ -221,9 +209,112 @@ def get_mood_settings(user_id):
         return 150, []
 
 
+# ── dependency ordering ───────────────────────────────────────────────────────
+
+def get_dependency_order(tasks, user_id):
+    """
+    Topological sort of tasks based on dependencies using Kahn's algorithm.
+
+    Rules:
+    - Tasks with no blockers are scheduled first.
+    - A task blocked by another task in the current set is placed
+      after its blocker in the schedule.
+    - A task blocked by a task NOT in the current set (e.g. not
+      pending/in-progress) that is also not done is considered
+      externally blocked and skipped this run.
+
+    Returns:
+        ordered_tasks  — list of tasks in safe scheduling order
+        blocked_ids    — set of task IDs blocked by external undone tasks
+    """
+    task_ids  = {t.id for t in tasks}
+    task_map  = {t.id: t for t in tasks}
+
+    # in_degree[task_id] = number of unresolved blockers within our set
+    in_degree = {t.id: 0 for t in tasks}
+
+    # graph[blocker_id] -> [task_ids that depend on it]
+    graph = {t.id: [] for t in tasks}
+
+    # tasks blocked by an external undone task (can't schedule at all this run)
+    blocked_ids = set()
+
+    for task in tasks:
+        deps = TaskDependency.query.filter_by(task_id=task.id).all()
+        for dep in deps:
+            blocker_id = dep.depends_on_id
+            blocker    = Task.query.get(blocker_id)
+
+            if blocker is None:
+                # blocker was deleted — ignore this dependency
+                continue
+
+            if blocker.status == 'done':
+                # blocker already done — no constraint needed
+                continue
+
+            if blocker_id in task_ids:
+                # blocker is in our schedulable set — add a graph edge
+                # blocker must come before task
+                graph[blocker_id].append(task.id)
+                in_degree[task.id] += 1
+            else:
+                # blocker exists, is not done, and is not being scheduled
+                # this task is fully blocked this run
+                blocked_ids.add(task.id)
+
+    # remove externally blocked tasks from consideration
+    schedulable = [t for t in tasks if t.id not in blocked_ids]
+
+    # Kahn's algorithm
+    # start with all tasks that have no unresolved blockers
+    queue  = [t for t in schedulable if in_degree[t.id] == 0]
+    result = []
+
+    while queue:
+        # among ready tasks, sort by priority + deadline so highest
+        # priority tasks get the best time slots
+        queue.sort(key=_dep_sort_key, reverse=True)
+        task = queue.pop(0)
+        result.append(task)
+
+        # unblock tasks that were waiting for this one
+        for neighbor_id in graph.get(task.id, []):
+            in_degree[neighbor_id] -= 1
+            if in_degree[neighbor_id] == 0:
+                neighbor = task_map.get(neighbor_id)
+                if neighbor and neighbor.id not in blocked_ids:
+                    queue.append(neighbor)
+
+    return result, blocked_ids
+
+
+def _dep_sort_key(task):
+    """
+    Sort key used inside the topological sort queue.
+    Combines deadline urgency and quadrant priority.
+    Higher = schedule sooner.
+    """
+    score = priority_score(task)
+    # also factor in deadline — sooner deadline = higher urgency
+    if task.deadline:
+        days_until = (task.deadline - date.today()).days
+        # invert so closer deadline = higher score
+        score += max(0, 30 - days_until)
+    return score
+
+
 # ── main scheduler ────────────────────────────────────────────────────────────
 
 def schedule_tasks(user_id, days_ahead=14):
+    """
+    Main scheduling function.
+    1. Fetches all pending/in-progress/delayed tasks.
+    2. Resolves dependency order — tasks are scheduled after their blockers.
+    3. Applies deadline-first + priority sort within the dependency order.
+    4. Distributes sessions across free time, respecting busy hours,
+       breaks, mood settings, and deadlines.
+    """
     from app.models.user import User
     user = User.query.get(user_id)
     if not user or not user.busy_hours_set:
@@ -231,7 +322,7 @@ def schedule_tasks(user_id, days_ahead=14):
 
     today = date.today()
 
-    # clear future unfinished sessions
+    # clear all future unfinished sessions for a clean reschedule
     ScheduleSession.query.filter(
         ScheduleSession.user_id      == user_id,
         ScheduleSession.date         >= today,
@@ -239,35 +330,49 @@ def schedule_tasks(user_id, days_ahead=14):
     ).delete(synchronize_session=False)
     db.session.flush()
 
+    # fetch tasks that need scheduling
     tasks = Task.query.filter(
         Task.user_id == user_id,
         Task.status.in_(['pending', 'in-progress', 'delayed'])
     ).all()
 
+    # skip tasks with no valid estimated hours
     tasks = [t for t in tasks if t.estimated_hours and t.estimated_hours > 0]
 
     if not tasks:
         db.session.commit()
         return []
 
-    # ── deadline-first sort ───────────────────────────────────────────────────
-    # primary:   tasks WITH deadlines, sorted by deadline ascending (soonest first)
-    # secondary: tasks WITHOUT deadlines, sorted by priority score descending
-    def sort_key(task):
+    # ── step 1: resolve dependency order ─────────────────────────────────────
+    ordered_tasks, blocked_ids = get_dependency_order(tasks, user_id)
+
+    # mark externally blocked tasks so the dashboard can show them
+    for task in tasks:
+        if task.id in blocked_ids:
+            task.status = 'delayed'
+
+    # ── step 2: within dependency order, apply deadline-first sort ───────────
+    # Tasks at the same dependency level are sorted by deadline proximity
+    # first, then by priority score. This preserves topological order
+    # because the dependency graph already determines which tasks can run
+    # first — we only re-sort tasks that are at the same "level".
+    def deadline_sort_key(task):
         if task.deadline:
             days_until = (task.deadline - today).days
-            # negative so sooner deadlines sort first
             return (0, days_until, -priority_score(task))
         else:
             return (1, 0, -priority_score(task))
 
-    tasks = sorted(tasks, key=sort_key)
+    # re-sort within dependency-safe order
+    # we do a stable sort pass on the ordered list to apply deadline priority
+    # while respecting the topological order as much as possible
+    ordered_tasks = _stable_deadline_sort(ordered_tasks, today)
     # ─────────────────────────────────────────────────────────────────────────
 
     max_session_min, skip_today = get_mood_settings(user_id)
     scheduled = []
 
-    for task in tasks:
+    for task in ordered_tasks:
         remaining_min = int(task.estimated_hours * 60)
         already_done  = int((task.completed_hours or 0) * 60)
         remaining_min = max(0, remaining_min - already_done)
@@ -276,7 +381,7 @@ def schedule_tasks(user_id, days_ahead=14):
             task.status = 'done'
             continue
 
-        # for deadline tasks: only search up to the deadline date
+        # determine search window
         if task.deadline:
             deadline_days = (task.deadline - today).days + 1
             search_window = min(deadline_days, days_ahead)
@@ -290,9 +395,11 @@ def schedule_tasks(user_id, days_ahead=14):
 
         while remaining_min >= MIN_SESSION_MIN and days_searched < search_window:
 
+            # don't schedule past deadline
             if task.deadline and search_date > task.deadline:
                 break
 
+            # mood skip: defer low-priority tasks on a bad day
             if (skip_today
                     and search_date == today
                     and task.quadrant in skip_today):
@@ -305,8 +412,7 @@ def schedule_tasks(user_id, days_ahead=14):
             if available >= MIN_SESSION_MIN:
                 session_min = min(remaining_min, max_session_min, available)
                 session_min = max(session_min, MIN_SESSION_MIN)
-
-                slot = find_next_slot(user_id, search_date, session_min)
+                slot        = find_next_slot(user_id, search_date, session_min)
 
                 if slot:
                     start_t, end_t = slot
@@ -339,8 +445,71 @@ def schedule_tasks(user_id, days_ahead=14):
     return scheduled
 
 
+def _stable_deadline_sort(ordered_tasks, today):
+    """
+    Applies deadline-first priority within the dependency-ordered list
+    without breaking dependency constraints.
+
+    Strategy: tasks that have all their dependencies already resolved
+    (i.e. their blockers appear earlier in the list) can be reordered
+    among themselves freely. Tasks that still depend on something later
+    in the list cannot be moved before their blocker.
+
+    This is implemented by doing a greedy pass:
+    - maintain a set of 'resolved' task IDs (already placed in output)
+    - at each step, pick the highest-priority task whose blockers
+      are all in the resolved set
+    """
+    task_map    = {t.id: t for t in ordered_tasks}
+    resolved    = set()
+    result      = []
+    remaining   = list(ordered_tasks)
+
+    while remaining:
+        # find all tasks whose blockers are fully resolved
+        ready = []
+        for task in remaining:
+            deps = TaskDependency.query.filter_by(task_id=task.id).all()
+            blocker_ids = set()
+            for dep in deps:
+                blocker = Task.query.get(dep.depends_on_id)
+                if blocker and blocker.status != 'done':
+                    blocker_ids.add(dep.depends_on_id)
+
+            # a task is ready if all its in-set blockers are resolved
+            in_set_blockers = blocker_ids & {t.id for t in ordered_tasks}
+            if in_set_blockers.issubset(resolved):
+                ready.append(task)
+
+        if not ready:
+            # shouldn't happen if topological sort was correct,
+            # but as a safety net just append remaining tasks as-is
+            result.extend(remaining)
+            break
+
+        # among ready tasks, pick the one with the best deadline sort key
+        ready.sort(key=lambda t: (
+            (0, (t.deadline - today).days, -priority_score(t))
+            if t.deadline else
+            (1, 0, -priority_score(t))
+        ))
+
+        chosen = ready[0]
+        result.append(chosen)
+        resolved.add(chosen.id)
+        remaining.remove(chosen)
+
+    return result
+
+
+# ── recurring tasks ───────────────────────────────────────────────────────────
+
 def schedule_recurring_tasks(user_id, days_ahead=14):
-    """Handles recurring tasks — one session per day or week."""
+    """
+    Handles recurring tasks — places one session per day (daily)
+    or one per week (weekly) within the scheduling window.
+    Recurring tasks are not subject to dependency ordering.
+    """
     today = date.today()
 
     recurring = Task.query.filter_by(

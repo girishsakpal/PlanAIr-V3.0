@@ -16,8 +16,11 @@ login_manager = LoginManager()
 csrf = CSRFProtect()
 
 def create_app(config_class=Config):
-    app = Flask(__name__)
+    app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(config_class)
+
+    if hasattr(config_class, 'init_app'):
+        config_class.init_app(app)
 
     db.init_app(app)
     login_manager.init_app(app)

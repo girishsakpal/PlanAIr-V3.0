@@ -209,6 +209,19 @@
                 {{ task.title }}
             </div>
 
+            <!-- dependency status indicator -->
+            {% set dep_count = task.dependencies | length %}
+            {% if dep_count > 0 %}
+            {% set unmet = task.dependencies | selectattr('depends_on.status', 'ne', 'done') | list | length %}
+            <div class="dep-indicator {% if unmet > 0 %}dep-blocked{% else %}dep-clear{% endif %}">
+                {% if unmet > 0 %}
+                &#128275; Blocked by {{ unmet }} task{{ 's' if unmet != 1 }}
+                {% else %}
+                &#128274; All blockers done — ready to schedule
+                {% endif %}
+            </div>
+            {% endif %}
+
             <div class="task-meta">
                 <span class="badge badge-{{ task.quadrant }}">
                     {{ task.quadrant | replace('_', ' ') | title }}
@@ -244,6 +257,18 @@
         </div>
 
         <div class="task-card-right">
+            {% if task.status != 'done' %}
+            <button class="btn btn-outline btn-sm dep-btn" onclick="openDepModal({{ task.id }}, '{{ task.title | e }}')"
+                title="Manage dependencies">
+                &#128279; Deps
+            </button>
+            {% endif %}
+            {% if task.status != 'done' %}
+            <button class="btn btn-outline btn-sm" onclick="openTaskLogModal({{ task.id }}, '{{ task.title | e }}')"
+                title="Log work">
+                Log work
+            </button>
+            {% endif %}
             <a href="{{ url_for('tasks.edit_task', task_id=task.id) }}" class="btn btn-outline btn-sm">Edit</a>
             <form method="POST" action="{{ url_for('tasks.delete_task', task_id=task.id) }}"
                 onsubmit="return confirm('Delete this task?')">
@@ -251,6 +276,7 @@
                 <button type="submit" class="btn btn-danger btn-sm">Delete</button>
             </form>
         </div>
+
     </div>
     {% endfor %}
 </div>
@@ -307,6 +333,130 @@
             </div>
             <button type="submit" class="btn btn-primary btn-full" style="margin-top:1rem">Add Task</button>
         </form>
+    </div>
+</div>
+
+<!-- task log modal -->
+<div class="modal-overlay" id="task-log-modal" onclick="closeTaskLogModal()">
+    <div class="modal task-log-modal-inner" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div>
+                <h3 id="task-log-title">Log work</h3>
+                <p class="text-muted text-sm" id="task-log-progress"></p>
+            </div>
+            <button class="modal-close" onclick="closeTaskLogModal()">&times;</button>
+        </div>
+
+        <!-- loading state -->
+        <div id="task-log-loading" style="text-align:center; padding:2rem; color:var(--text-muted)">
+            Loading sessions...
+        </div>
+
+        <!-- sessions list -->
+        <div id="task-log-sessions" style="display:none">
+
+            <!-- no sessions message -->
+            <div id="task-log-empty" style="display:none; text-align:center; padding:1.5rem; color:var(--text-muted)">
+                <p>No sessions scheduled for this task yet.</p>
+                <p class="text-sm" style="margin-top:0.5rem">
+                    Generate your schedule first to create sessions.
+                </p>
+            </div>
+
+            <!-- session rows -->
+            <div id="task-log-list"></div>
+
+            <!-- inline log form — shown when a session is selected -->
+            <div id="task-log-form" style="display:none; margin-top:1rem">
+                <div
+                    style="background:var(--bg-secondary); border-radius:var(--radius); padding:1rem; border:1px solid var(--border)">
+                    <p class="text-sm" style="margin-bottom:0.75rem; font-weight:500">
+                        Logging for: <span id="selected-session-label" style="color:var(--primary)"></span>
+                    </p>
+                    <p class="text-muted text-sm" style="margin-bottom:0.75rem">
+                        Allocated: <strong id="selected-session-allocated"></strong>
+                        &nbsp;·&nbsp;
+                        How much did you actually work?
+                    </p>
+                    <div class="log-options" style="margin-bottom:0.85rem">
+                        <button class="log-option-btn" id="tl-btn-full" onclick="selectTaskLogOption('full')">
+                            <span class="log-option-icon">✓</span>
+                            <span class="log-option-label">Full time</span>
+                            <span class="log-option-sub" id="tl-full-label">All hours</span>
+                        </button>
+                        <button class="log-option-btn" id="tl-btn-partial" onclick="selectTaskLogOption('partial')">
+                            <span class="log-option-icon">◑</span>
+                            <span class="log-option-label">Partial</span>
+                            <span class="log-option-sub">Enter amount</span>
+                        </button>
+                    </div>
+                    <div id="tl-partial-wrap" style="display:none; margin-bottom:0.85rem">
+                        <label style="font-size:0.85rem; font-weight:500; display:block; margin-bottom:0.3rem">
+                            Hours worked (max <span id="tl-max-hours"></span>h)
+                        </label>
+                        <input type="number" id="tl-partial-input" class="form-input" step="0.25" min="0.25"
+                            placeholder="e.g. 1.5" style="max-width:160px">
+                    </div>
+                    <div style="display:flex; gap:0.75rem">
+                        <button class="btn btn-primary btn-sm" onclick="submitTaskLog()">
+                            Save
+                        </button>
+                        <button class="btn btn-outline btn-sm" onclick="cancelTaskLogSelection()">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- dependencies modal -->
+<div class="modal-overlay" id="dep-modal" onclick="closeDepModal()">
+    <div class="modal dep-modal-inner" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <div>
+                <h3 id="dep-modal-title">Task Dependencies</h3>
+                <p class="text-muted text-sm" id="dep-modal-subtitle"></p>
+            </div>
+            <button class="modal-close" onclick="closeDepModal()">&times;</button>
+        </div>
+
+        <div id="dep-loading" style="text-align:center; padding:2rem; color:var(--text-muted)">
+            Loading...
+        </div>
+
+        <div id="dep-content" style="display:none">
+
+            <!-- blocked by section -->
+            <div class="dep-section">
+                <div class="dep-section-title">
+                    &#128275; This task is blocked by
+                    <span class="dep-hint">(must be done before this task starts)</span>
+                </div>
+                <div id="dep-blocked-by-list"></div>
+
+                <!-- add blocker -->
+                <div class="dep-add-wrap">
+                    <select id="dep-add-select" class="form-input form-select dep-select">
+                        <option value="">Select a task that must finish first...</option>
+                    </select>
+                    <button class="btn btn-outline btn-sm" onclick="addDependency()">
+                        + Add blocker
+                    </button>
+                </div>
+            </div>
+
+            <!-- blocking section -->
+            <div class="dep-section" id="dep-blocking-section" style="display:none">
+                <div class="dep-section-title">
+                    &#128274; This task is blocking
+                    <span class="dep-hint">(these tasks wait for this one)</span>
+                </div>
+                <div id="dep-blocking-list"></div>
+            </div>
+
+        </div>
     </div>
 </div>
 
@@ -408,5 +558,411 @@
                 });
         });
     });
+
+    // ── task log modal state ──────────────────────────────────────────────────
+    let taskLogActiveTaskId = null;
+    let taskLogActiveSessionId = null;
+    let taskLogAllocatedHours = 0;
+    let taskLogOption = 'full';
+
+    function openTaskLogModal(taskId, taskTitle) {
+        taskLogActiveTaskId = taskId;
+        taskLogActiveSessionId = null;
+
+        document.getElementById('task-log-title').textContent = 'Log work — ' + taskTitle;
+        document.getElementById('task-log-progress').textContent = '';
+        document.getElementById('task-log-loading').style.display = 'block';
+        document.getElementById('task-log-sessions').style.display = 'none';
+        document.getElementById('task-log-form').style.display = 'none';
+        document.getElementById('task-log-modal').style.display = 'flex';
+
+        // fetch sessions for this task
+        fetch(`/tasks/${taskId}/sessions`, {
+            headers: { 'X-CSRFToken': getCSRFToken() }
+        })
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('task-log-loading').style.display = 'none';
+                document.getElementById('task-log-sessions').style.display = 'block';
+
+                // update progress header
+                const pct = data.estimated_hours > 0
+                    ? Math.round((data.completed_hours / data.estimated_hours) * 100)
+                    : 0;
+                document.getElementById('task-log-progress').textContent =
+                    `${data.completed_hours}h / ${data.estimated_hours}h completed (${pct}%)`;
+
+                renderTaskSessions(data.sessions);
+            })
+            .catch(() => {
+                document.getElementById('task-log-loading').textContent = 'Failed to load sessions.';
+            });
+    }
+
+    function renderTaskSessions(sessions) {
+        const list = document.getElementById('task-log-list');
+        const empty = document.getElementById('task-log-empty');
+        list.innerHTML = '';
+
+        if (!sessions || sessions.length === 0) {
+            empty.style.display = 'block';
+            return;
+        }
+        empty.style.display = 'none';
+
+        sessions.forEach(s => {
+            const row = document.createElement('div');
+            row.className = 'task-log-session-row' + (s.is_completed ? ' task-log-session--done' : '');
+            row.id = 'tl-row-' + s.id;
+
+            let rightContent = '';
+            if (s.is_completed) {
+                rightContent = `
+                <span class="logged-hours-text">${s.logged_hours || s.allocated_hours}h logged</span>
+                <button class="btn-undo" onclick="undoTaskSession(${s.id})">Undo</button>
+            `;
+            } else if (s.is_past) {
+                rightContent = `
+                <button class="btn btn-outline btn-sm"
+                        onclick="selectTaskSession(${s.id}, '${s.session_label}', ${s.allocated_hours})">
+                    Log hours
+                </button>
+            `;
+            } else {
+                rightContent = `<span class="text-muted text-sm">Upcoming</span>`;
+            }
+
+            row.innerHTML = `
+            <div class="task-log-session-left">
+                <span class="task-log-session-date">${s.date}</span>
+                <span class="task-log-session-time text-muted text-sm">
+                    ${s.start_time} – ${s.end_time}
+                    &nbsp;·&nbsp; ${s.allocated_hours}h allocated
+                </span>
+                <span class="task-log-session-label text-sm">${s.session_label}</span>
+            </div>
+            <div class="task-log-session-right">${rightContent}</div>
+        `;
+            list.appendChild(row);
+        });
+    }
+
+    function selectTaskSession(sessionId, label, allocatedHours) {
+        taskLogActiveSessionId = sessionId;
+        taskLogAllocatedHours = allocatedHours;
+        taskLogOption = 'full';
+
+        document.getElementById('selected-session-label').textContent = label;
+        document.getElementById('selected-session-allocated').textContent = allocatedHours + 'h';
+        document.getElementById('tl-full-label').textContent = allocatedHours + 'h (full session)';
+        document.getElementById('tl-max-hours').textContent = allocatedHours;
+        document.getElementById('tl-partial-input').max = allocatedHours;
+        document.getElementById('tl-partial-input').value = '';
+        document.getElementById('tl-partial-wrap').style.display = 'none';
+
+        document.getElementById('tl-btn-full').classList.add('log-option-btn--active');
+        document.getElementById('tl-btn-partial').classList.remove('log-option-btn--active');
+
+        document.getElementById('task-log-form').style.display = 'block';
+
+        // scroll the form into view smoothly
+        document.getElementById('task-log-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function cancelTaskLogSelection() {
+        taskLogActiveSessionId = null;
+        document.getElementById('task-log-form').style.display = 'none';
+    }
+
+    function selectTaskLogOption(option) {
+        taskLogOption = option;
+        document.getElementById('tl-btn-full').classList.toggle(
+            'log-option-btn--active', option === 'full'
+        );
+        document.getElementById('tl-btn-partial').classList.toggle(
+            'log-option-btn--active', option === 'partial'
+        );
+        document.getElementById('tl-partial-wrap').style.display =
+            option === 'partial' ? 'block' : 'none';
+    }
+
+    function submitTaskLog() {
+        if (!taskLogActiveSessionId) return;
+
+        let hoursWorked = taskLogAllocatedHours;
+        if (taskLogOption === 'partial') {
+            const val = parseFloat(document.getElementById('tl-partial-input').value);
+            if (!val || val <= 0 || val > taskLogAllocatedHours) {
+                alert(`Please enter a value between 0.25 and ${taskLogAllocatedHours}`);
+                return;
+            }
+            hoursWorked = val;
+        }
+
+        fetch(`/schedule/session/${taskLogActiveSessionId}/toggle`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({ hours_worked: hoursWorked, unchecking: false })
+        })
+            .then(r => r.json())
+            .then(data => {
+                // update the session row in the modal
+                const row = document.getElementById('tl-row-' + taskLogActiveSessionId);
+                if (row) {
+                    row.classList.add('task-log-session--done');
+                    const right = row.querySelector('.task-log-session-right');
+                    right.innerHTML = `
+                <span class="logged-hours-text">${hoursWorked}h logged</span>
+                <button class="btn-undo"
+                        onclick="undoTaskSession(${taskLogActiveSessionId})">
+                    Undo
+                </button>
+            `;
+                }
+
+                // update progress header
+                const pct = data.estimated_hours > 0
+                    ? Math.round((data.completed_hours / data.estimated_hours) * 100)
+                    : 0;
+                document.getElementById('task-log-progress').textContent =
+                    `${data.completed_hours}h / ${data.estimated_hours}h completed (${pct}%)`;
+
+                // update progress bar on task card
+                updateTaskProgressBar(data);
+
+                // hide the log form
+                document.getElementById('task-log-form').style.display = 'none';
+                taskLogActiveSessionId = null;
+
+                // if task is now done, close modal and refresh
+                if (data.task_status === 'done') {
+                    setTimeout(() => {
+                        closeTaskLogModal();
+                        location.reload();
+                    }, 800);
+                }
+            });
+    }
+
+    function undoTaskSession(sessionId) {
+        fetch(`/schedule/session/${sessionId}/toggle`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({ unchecking: true })
+        })
+            .then(r => r.json())
+            .then(data => {
+                // update session row back to log button
+                const row = document.getElementById('tl-row-' + sessionId);
+                if (row) {
+                    row.classList.remove('task-log-session--done');
+                    const right = row.querySelector('.task-log-session-right');
+                    right.innerHTML = `
+                <button class="btn btn-outline btn-sm"
+                        onclick="selectTaskSession(${sessionId},
+                                 '${row.querySelector('.task-log-session-label').textContent}',
+                                 ${data.allocated_hours})">
+                    Log hours
+                </button>
+            `;
+                }
+
+                // update progress header
+                const pct = data.estimated_hours > 0
+                    ? Math.round((data.completed_hours / data.estimated_hours) * 100)
+                    : 0;
+                document.getElementById('task-log-progress').textContent =
+                    `${data.completed_hours}h / ${data.estimated_hours}h completed (${pct}%)`;
+
+                updateTaskProgressBar(data);
+            });
+    }
+
+    function updateTaskProgressBar(data) {
+        const taskId = data.task_id;
+        const bar = document.getElementById(`progress-bar-${taskId}`);
+        const label = document.getElementById(`progress-label-${taskId}`);
+        const card = document.getElementById(`task-card-${taskId}`);
+        const title = card ? card.querySelector('.task-title') : null;
+
+        if (bar) bar.style.width = data.progress_pct + '%';
+        if (label) {
+            label.textContent = data.task_status === 'done'
+                ? 'Completed'
+                : `${data.completed_hours}h / ${data.estimated_hours}h (${data.progress_pct}%)`;
+        }
+        if (data.task_status === 'done') {
+            if (bar) bar.classList.add('task-progress-done');
+            if (title) title.classList.add('task-done');
+            if (card) card.classList.add('status-done');
+        }
+    }
+
+    function closeTaskLogModal() {
+        document.getElementById('task-log-modal').style.display = 'none';
+        taskLogActiveTaskId = null;
+        taskLogActiveSessionId = null;
+    }
+
+    // ── dependency modal ──────────────────────────────────────────────────────
+    let depActiveTaskId = null;
+
+    function openDepModal(taskId, taskTitle) {
+        depActiveTaskId = taskId;
+        document.getElementById('dep-modal-title').textContent = taskTitle;
+        document.getElementById('dep-modal-subtitle').textContent = '';
+        document.getElementById('dep-loading').style.display = 'block';
+        document.getElementById('dep-content').style.display = 'none';
+        document.getElementById('dep-modal').style.display = 'flex';
+        loadDependencies(taskId);
+    }
+
+    function closeDepModal() {
+        document.getElementById('dep-modal').style.display = 'none';
+        depActiveTaskId = null;
+    }
+
+    function loadDependencies(taskId) {
+        fetch(`/tasks/${taskId}/dependencies`, {
+            headers: { 'X-CSRFToken': getCSRFToken() }
+        })
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('dep-loading').style.display = 'none';
+                document.getElementById('dep-content').style.display = 'block';
+
+                renderBlockedBy(data.blocked_by, data.available);
+                renderBlocking(data.blocking);
+            });
+    }
+
+    function renderBlockedBy(blockedBy, available) {
+        const list = document.getElementById('dep-blocked-by-list');
+        list.innerHTML = '';
+
+        if (blockedBy.length === 0) {
+            list.innerHTML = '<p class="dep-empty">No blockers — this task can be scheduled freely.</p>';
+        } else {
+            blockedBy.forEach(dep => {
+                const row = document.createElement('div');
+                row.className = 'dep-row ' + (dep.is_done ? 'dep-row--done' : 'dep-row--pending');
+                row.id = 'dep-row-' + dep.dependency_id;
+                row.innerHTML = `
+                <div class="dep-row-left">
+                    <span class="dep-status-dot ${dep.is_done ? 'dep-dot--done' : 'dep-dot--pending'}"></span>
+                    <span class="dep-task-name">${dep.title}</span>
+                    <span class="dep-task-badge badge badge-${dep.quadrant}">
+                        ${dep.quadrant.replace('_', ' ')}
+                    </span>
+                </div>
+                <div class="dep-row-right">
+                    <span class="dep-status-text ${dep.is_done ? 'dep-text--done' : 'dep-text--pending'}">
+                        ${dep.is_done ? '&#10003; Done' : '&#9679; In progress'}
+                    </span>
+                    <button class="btn-undo"
+                            onclick="removeDependency(${dep.dependency_id})">
+                        Remove
+                    </button>
+                </div>
+            `;
+                list.appendChild(row);
+            });
+        }
+
+        // populate the add select
+        const select = document.getElementById('dep-add-select');
+        select.innerHTML = '<option value="">Select a task that must finish first...</option>';
+        available.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t.id;
+            opt.textContent = t.title;
+            select.appendChild(opt);
+        });
+    }
+
+    function renderBlocking(blocking) {
+        const section = document.getElementById('dep-blocking-section');
+        const list = document.getElementById('dep-blocking-list');
+        list.innerHTML = '';
+
+        if (blocking.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+
+        section.style.display = 'block';
+        blocking.forEach(dep => {
+            const row = document.createElement('div');
+            row.className = 'dep-row dep-row--blocking';
+            row.innerHTML = `
+            <div class="dep-row-left">
+                <span class="dep-status-dot dep-dot--blocking"></span>
+                <span class="dep-task-name">${dep.title}</span>
+                <span class="dep-task-badge badge badge-${dep.quadrant}">
+                    ${dep.quadrant.replace('_', ' ')}
+                </span>
+            </div>
+            <div class="dep-row-right">
+                <span class="dep-status-text" style="color:var(--text-muted)">waiting</span>
+            </div>
+        `;
+            list.appendChild(row);
+        });
+    }
+
+    function addDependency() {
+        const select = document.getElementById('dep-add-select');
+        const dependsOnId = parseInt(select.value);
+
+        if (!dependsOnId) {
+            alert('Please select a task first.');
+            return;
+        }
+
+        fetch(`/tasks/${depActiveTaskId}/dependencies/add`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({ depends_on_id: dependsOnId })
+        })
+            .then(r => r.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+                // reload dependencies
+                loadDependencies(depActiveTaskId);
+                // update the dep indicator on the task card
+                updateDepIndicator(depActiveTaskId);
+            });
+    }
+
+    function removeDependency(depId) {
+        fetch(`/tasks/dependencies/${depId}/remove`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRFToken() }
+        })
+            .then(r => r.json())
+            .then(() => {
+                loadDependencies(depActiveTaskId);
+                updateDepIndicator(depActiveTaskId);
+            });
+    }
+
+    function updateDepIndicator(taskId) {
+        // reload page to refresh dep indicators on task cards
+        // (full reload is simplest since indicators are server-rendered)
+        location.reload();
+    }
+
 </script>
 {% endblock %}

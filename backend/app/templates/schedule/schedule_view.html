@@ -211,7 +211,9 @@
             hoursWorked = val;
         }
 
-        fetch(`/schedule/session/${activeSessionId}/toggle`, {
+        const sessionId = activeSessionId;  // capture before anything clears it
+
+        fetch(`/schedule/session/${sessionId}/toggle`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -221,10 +223,11 @@
         })
             .then(r => r.json())
             .then(data => {
-                closeLogModal();
-                updateSessionUI(activeSessionId, data, hoursWorked);
+                // update UI first, then close modal
+                updateSessionUI(sessionId, data, hoursWorked);
                 updateProgressBars(data);
                 updateSummary();
+                closeLogModal();  // close last so activeSessionId is still valid if needed
             });
     }
 

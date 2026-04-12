@@ -2,7 +2,7 @@ from flask import (Blueprint, render_template, redirect, url_for,
                    flash, request, jsonify)
 from flask_login import login_required, current_user
 from app import db
-from app.models.task import Task
+from app.models.task import Task, TaskDependency
 from app.forms import TaskForm
 from datetime import datetime, date
 from app.models.mood import MoodLog, ProductivityLog
@@ -171,6 +171,21 @@ def edit_task(task_id):
         task.is_recurring    = form.is_recurring.data
         task.recurrence_type = form.recurrence_type.data or None
         task.quadrant        = task.compute_quadrant()
+
+        # ── recheck completion status after hours change ──────────────
+        completed = task.completed_hours or 0
+
+        if completed >= task.estimated_hours and task.estimated_hours > 0:
+            # still fully done
+            task.status = 'done'
+        elif completed > 0:
+            # partially done — reopen as in-progress
+            task.status = 'in-progress'
+        else:
+            # nothing logged yet
+            task.status = 'pending'
+        # ─────────────────────────────────────────────────────────────
+
         db.session.commit()
         flash('Task updated.', 'success')
         return redirect(url_for('tasks.dashboard'))
@@ -189,3 +204,195 @@ def matrix():
         'avoid':    [t for t in tasks if t.quadrant == 'avoid'],
     }
     return render_template('tasks/matrix.html', quadrants=quadrants)
+
+
+@tasks_bp.route('/tasks/<int:task_id>/sessions', methods=['GET'])
+@login_required
+def get_task_sessions(task_id):
+    task = Task.query.filter_by(
+        id=task_id,
+        user_id=current_user.id
+    ).first_or_404()
+
+    from app.models.schedule import ScheduleSession
+    from datetime import date
+
+    sessions = ScheduleSession.query.filter_by(
+        task_id=task_id
+    ).order_by(ScheduleSession.date.desc(), ScheduleSession.start_time).all()
+
+    sessions_data = []
+    for s in sessions:
+        allocated_minutes = (
+            s.end_time.hour * 60 + s.end_time.minute -
+            s.start_time.hour * 60 - s.start_time.minute
+        )
+        sessions_data.append({
+            'id':              s.id,
+            'date':            s.date.strftime('%d %b %Y'),
+            'date_raw':        str(s.date),
+            'start_time':      s.start_time.strftime('%H:%M'),
+            'end_time':        s.end_time.strftime('%H:%M'),
+            'session_label':   s.session_label or task.title,
+            'is_completed':    s.is_completed,
+            'logged_hours':    s.logged_hours,
+            'allocated_hours': round(allocated_minutes / 60, 2),
+            'is_past':         s.date <= date.today()
+        })
+
+    return jsonify({
+        'task_title':      task.title,
+        'task_id':         task.id,
+        'estimated_hours': task.estimated_hours,
+        'completed_hours': task.completed_hours or 0,
+        'sessions':        sessions_data
+    })
+
+
+@tasks_bp.route('/tasks/<int:task_id>/dependencies', methods=['GET'])
+@login_required
+def get_dependencies(task_id):
+    """Returns all tasks this task depends on + all tasks that depend on it."""
+    task = Task.query.filter_by(
+        id=task_id, user_id=current_user.id
+    ).first_or_404()
+
+    # tasks this task is blocked by
+    blocked_by = []
+    for dep in task.dependencies:
+        blocker = dep.depends_on
+        blocked_by.append({
+            'dependency_id': dep.id,
+            'task_id':       blocker.id,
+            'title':         blocker.title,
+            'status':        blocker.status,
+            'quadrant':      blocker.quadrant,
+            'is_done':       blocker.status == 'done'
+        })
+
+    # tasks that are blocked by this task
+    blocking = []
+    for dep in task.dependents:
+        blocked_task = dep.task
+        blocking.append({
+            'dependency_id': dep.id,
+            'task_id':       blocked_task.id,
+            'title':         blocked_task.title,
+            'status':        blocked_task.status,
+            'quadrant':      blocked_task.quadrant,
+        })
+
+    # all other tasks available to link
+    all_tasks = Task.query.filter(
+        Task.user_id == current_user.id,
+        Task.id != task_id,
+        Task.status != 'done'
+    ).all()
+
+    # exclude already linked tasks
+    linked_ids = {d.depends_on_id for d in task.dependencies}
+    linked_ids.update({d.task_id for d in task.dependents})
+
+    available = [
+        {'id': t.id, 'title': t.title, 'quadrant': t.quadrant}
+        for t in all_tasks
+        if t.id not in linked_ids
+    ]
+
+    return jsonify({
+        'task_title': task.title,
+        'task_id':    task_id,
+        'blocked_by': blocked_by,
+        'blocking':   blocking,
+        'available':  available
+    })
+
+
+@tasks_bp.route('/tasks/<int:task_id>/dependencies/add', methods=['POST'])
+@login_required
+def add_dependency(task_id):
+    """Mark task_id as depending on depends_on_id."""
+    task = Task.query.filter_by(
+        id=task_id, user_id=current_user.id
+    ).first_or_404()
+
+    depends_on_id = request.json.get('depends_on_id')
+    if not depends_on_id:
+        return jsonify({'error': 'depends_on_id required'}), 400
+
+    # validate the target task belongs to this user
+    target = Task.query.filter_by(
+        id=depends_on_id, user_id=current_user.id
+    ).first_or_404()
+
+    # prevent self-dependency
+    if depends_on_id == task_id:
+        return jsonify({'error': 'A task cannot depend on itself'}), 400
+
+    # prevent circular dependency
+    if _would_create_cycle(task_id, depends_on_id):
+        return jsonify({'error': 'This would create a circular dependency'}), 400
+
+    # check if already exists
+    existing = TaskDependency.query.filter_by(
+        task_id=task_id,
+        depends_on_id=depends_on_id
+    ).first()
+
+    if existing:
+        return jsonify({'error': 'Dependency already exists'}), 400
+
+    dep = TaskDependency(
+        user_id=current_user.id,
+        task_id=task_id,
+        depends_on_id=depends_on_id
+    )
+    db.session.add(dep)
+    db.session.commit()
+
+    return jsonify({
+        'success':       True,
+        'dependency_id': dep.id,
+        'blocker_title': target.title,
+        'blocker_status': target.status,
+        'is_done':       target.status == 'done'
+    })
+
+
+@tasks_bp.route('/tasks/dependencies/<int:dep_id>/remove', methods=['POST'])
+@login_required
+def remove_dependency(dep_id):
+    """Remove a dependency link."""
+    dep = TaskDependency.query.filter_by(
+        id=dep_id,
+        user_id=current_user.id
+    ).first_or_404()
+    db.session.delete(dep)
+    db.session.commit()
+    return jsonify({'success': True})
+
+
+def _would_create_cycle(task_id, new_depends_on_id):
+    """
+    Check if adding task_id -> new_depends_on_id would create a cycle.
+    Uses DFS to check if new_depends_on_id is reachable FROM task_id
+    through existing dependencies. If it is, adding the reverse link
+    would create a cycle.
+    """
+    visited = set()
+    stack   = [task_id]
+
+    while stack:
+        current = stack.pop()
+        if current in visited:
+            continue
+        visited.add(current)
+
+        # get what current task depends on
+        deps = TaskDependency.query.filter_by(task_id=current).all()
+        for dep in deps:
+            if dep.depends_on_id == new_depends_on_id:
+                return True
+            stack.append(dep.depends_on_id)
+
+    return False
