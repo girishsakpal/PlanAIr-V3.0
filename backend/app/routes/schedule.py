@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from app import db
 from app.models.schedule import BusyHours, ScheduleSession
-from app.models.task import Task
+from app.models.task import Task, TaskHistory
 from app.forms import BusyHoursForm
 from app.scheduler import (schedule_tasks, schedule_recurring_tasks,
                             time_to_minutes)
@@ -196,7 +196,26 @@ def toggle_session(session_id):
     # auto-complete task when all hours done
     if task.completed_hours >= task.estimated_hours:
         task.completed_hours = task.estimated_hours
-        task.status          = 'done'
+        was_done_before = task.status == 'done'
+        task.status     = 'done'
+        # write history entry on first completion
+        if not was_done_before:
+            history = TaskHistory(
+                user_id          = current_user.id,
+                original_task_id = task.id,
+                title            = task.title,
+                description      = task.description,
+                urgency          = task.urgency,
+                importance       = task.importance,
+                estimated_hours  = task.estimated_hours,
+                completed_hours  = task.completed_hours,
+                deadline         = task.deadline,
+                quadrant         = task.quadrant,
+                is_recurring     = task.is_recurring,
+                event_type       = 'completed',
+                task_created_at  = task.created_at,
+            )
+            db.session.add(history)
     else:
         all_sessions  = ScheduleSession.query.filter_by(task_id=task.id).all()
         any_completed = any(s.is_completed for s in all_sessions)

@@ -163,27 +163,44 @@ def get_available_minutes_on_day(user_id, target_date):
 
 def priority_score(task):
     """
-    All quadrants get scheduled — priority only affects ORDER.
-    Deadline proximity adds urgency boost.
+    Deadline proximity is the PRIMARY scheduling driver.
+    Quadrant weight acts as a tiebreaker within the same deadline band.
+
+    Score bands (higher score = scheduled earlier):
+      overdue / due today  -> 1000 + quadrant_weight
+      due tomorrow         ->  800 + quadrant_weight  (beats any 2-day task)
+      due in 2 days        ->  600 + quadrant_weight
+      due in 3-4 days      ->  400 + quadrant_weight
+      due in 5-7 days      ->  200 + quadrant_weight
+      due in 8-14 days     ->  100 + quadrant_weight
+      no deadline          ->    0 + quadrant_weight  (lowest tier)
     """
     quadrant_weights = {
-        'do_now':   100,
-        'schedule':  75,
-        'delegate':  50,
-        'avoid':     25,
+        'do_now':   80,
+        'schedule': 60,
+        'delegate': 40,
+        'avoid':    20,
     }
-    score = quadrant_weights.get(task.quadrant or 'avoid', 25)
+    qw = quadrant_weights.get(task.quadrant or 'avoid', 20)
 
     if task.deadline:
         days_left = (task.deadline - date.today()).days
-        if days_left <= 1:
-            score += 50
-        elif days_left <= 3:
-            score += 30
+        if days_left <= 0:
+            deadline_score = 1000
+        elif days_left == 1:
+            deadline_score = 800
+        elif days_left == 2:
+            deadline_score = 600
+        elif days_left <= 4:
+            deadline_score = 400
         elif days_left <= 7:
-            score += 15
+            deadline_score = 200
+        else:
+            deadline_score = 100
+    else:
+        deadline_score = 0
 
-    return score
+    return deadline_score + qw
 
 
 # ── mood adjustment ───────────────────────────────────────────────────────────

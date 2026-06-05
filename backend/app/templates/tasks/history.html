@@ -1,0 +1,360 @@
+{% extends "base.html" %}
+{% block title %}Task History — PlanAIr{% endblock %}
+
+{% block content %}
+<div class="history-container">
+
+    <div class="history-header">
+        <div>
+            <h2>Task History</h2>
+            <p class="text-muted">Every task you've worked on — completed or removed — in one place.</p>
+        </div>
+        <div class="history-summary">
+            {% set completed_count = entries | selectattr('event_type', 'equalto', 'completed') | list | length %}
+            {% set deleted_count   = entries | selectattr('event_type', 'equalto', 'deleted')   | list | length %}
+            <span class="history-stat">
+                <span class="stat-dot stat-dot--completed"></span>
+                {{ completed_count }} completed
+            </span>
+            <span class="history-stat">
+                <span class="stat-dot stat-dot--deleted"></span>
+                {{ deleted_count }} deleted
+            </span>
+        </div>
+    </div>
+
+    {% if not entries %}
+    <div class="history-empty">
+        <div class="history-empty-icon">📋</div>
+        <p>No task history yet.</p>
+        <p class="text-muted">Completed or deleted tasks will appear here.</p>
+    </div>
+    {% else %}
+
+    <!-- Filter bar -->
+    <div class="history-filters">
+        <button class="filter-btn active" onclick="filterHistory('all', this)">All</button>
+        <button class="filter-btn" onclick="filterHistory('completed', this)">✓ Completed</button>
+        <button class="filter-btn" onclick="filterHistory('deleted', this)">✕ Deleted</button>
+        <input type="text" id="history-search" class="history-search"
+               placeholder="Search tasks…" oninput="searchHistory(this.value)">
+    </div>
+
+    <div class="history-list" id="history-list">
+        {% set ns = namespace(last_date='') %}
+        {% for entry in entries %}
+            {% set entry_date = entry.event_at.strftime('%d %b %Y') %}
+            {% if entry_date != ns.last_date %}
+                {% set ns.last_date = entry_date %}
+                <div class="history-date-divider" data-date="{{ entry_date }}">
+                    <span>{{ entry_date }}</span>
+                </div>
+            {% endif %}
+
+            <div class="history-card {{ entry.event_type }}"
+                 data-type="{{ entry.event_type }}"
+                 data-title="{{ entry.title | lower }}">
+
+                <div class="history-card-left">
+                    <span class="history-badge history-badge--{{ entry.event_type }}">
+                        {% if entry.event_type == 'completed' %}✓ Completed{% else %}✕ Deleted{% endif %}
+                    </span>
+                    <span class="history-quadrant history-quadrant--{{ entry.quadrant or 'avoid' }}">
+                        {% if entry.quadrant == 'do_now' %}Do Now
+                        {% elif entry.quadrant == 'schedule' %}Schedule
+                        {% elif entry.quadrant == 'delegate' %}Delegate
+                        {% else %}Avoid{% endif %}
+                    </span>
+                </div>
+
+                <div class="history-card-body">
+                    <div class="history-title">{{ entry.title }}</div>
+                    {% if entry.description %}
+                    <div class="history-desc">{{ entry.description }}</div>
+                    {% endif %}
+                    <div class="history-meta">
+                        <span title="Estimated hours">⏱ {{ entry.estimated_hours }}h estimated</span>
+                        {% if entry.completed_hours %}
+                        <span title="Hours logged">✅ {{ entry.completed_hours }}h logged</span>
+                        {% endif %}
+                        {% if entry.deadline %}
+                        <span title="Deadline">📅 Due {{ entry.deadline.strftime('%d %b %Y') }}</span>
+                        {% endif %}
+                        <span title="Task created">🗓 Created
+                            {{ entry.task_created_at.strftime('%d %b %Y') if entry.task_created_at else '—' }}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="history-card-right">
+                    <div class="history-time">
+                        {{ entry.event_at.strftime('%I:%M %p') }}
+                    </div>
+                    <div class="history-urgency-row">
+                        <span class="history-pill">U {{ entry.urgency }}/4</span>
+                        <span class="history-pill">I {{ entry.importance }}/4</span>
+                    </div>
+                </div>
+
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let activeFilter = 'all';
+
+    function filterHistory(type, btn) {
+        activeFilter = type;
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        applyFilters();
+    }
+
+    function searchHistory(query) {
+        applyFilters(query.toLowerCase());
+    }
+
+    function applyFilters(query) {
+        if (query === undefined) {
+            query = document.getElementById('history-search').value.toLowerCase();
+        }
+        const cards = document.querySelectorAll('.history-card');
+        let visibleDates = new Set();
+
+        cards.forEach(card => {
+            const typeMatch  = activeFilter === 'all' || card.dataset.type === activeFilter;
+            const queryMatch = !query || card.dataset.title.includes(query);
+            const show = typeMatch && queryMatch;
+            card.style.display = show ? '' : 'none';
+            if (show) {
+                // find the preceding date divider's date
+                let prev = card.previousElementSibling;
+                while (prev && !prev.classList.contains('history-date-divider')) {
+                    prev = prev.previousElementSibling;
+                }
+                if (prev) visibleDates.add(prev.dataset.date);
+            }
+        });
+
+        // show/hide date dividers
+        document.querySelectorAll('.history-date-divider').forEach(div => {
+            div.style.display = visibleDates.has(div.dataset.date) ? '' : 'none';
+        });
+    }
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .history-container {
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+
+    .history-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .history-header h2 { margin: 0; }
+    .history-header p  { margin: 0.25rem 0 0; }
+
+    .history-summary {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        font-size: 0.85rem;
+    }
+
+    .history-stat {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--text-muted);
+    }
+
+    .stat-dot {
+        width: 10px; height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .stat-dot--completed { background: #22c55e; }
+    .stat-dot--deleted   { background: var(--text-muted); }
+
+    /* Filters */
+    .history-filters {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+        margin-bottom: 1.25rem;
+    }
+
+    .filter-btn {
+        padding: 0.3rem 0.85rem;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        background: var(--bg-secondary);
+        color: var(--text-muted);
+        font-size: 0.82rem;
+        cursor: pointer;
+        transition: all 0.15s;
+    }
+    .filter-btn:hover, .filter-btn.active {
+        background: var(--primary);
+        color: #fff;
+        border-color: var(--primary);
+    }
+
+    .history-search {
+        margin-left: auto;
+        padding: 0.3rem 0.75rem;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        font-size: 0.82rem;
+        min-width: 180px;
+        outline: none;
+    }
+    .history-search:focus { border-color: var(--primary); }
+
+    /* Date dividers */
+    .history-date-divider {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 1.25rem 0 0.5rem;
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .history-date-divider::before,
+    .history-date-divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+    }
+
+    /* Cards */
+    .history-card {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 0.9rem 1rem;
+        margin-bottom: 0.5rem;
+        transition: box-shadow 0.15s;
+    }
+    .history-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    .history-card.completed { border-left: 3px solid #22c55e; }
+    .history-card.deleted   { border-left: 3px solid var(--text-muted); opacity: 0.8; }
+
+    .history-card-left {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+        flex-shrink: 0;
+        min-width: 90px;
+    }
+
+    .history-badge {
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 2px 7px;
+        border-radius: 20px;
+        white-space: nowrap;
+    }
+    .history-badge--completed { background: #dcfce7; color: #15803d; }
+    .history-badge--deleted   { background: var(--bg-secondary);
+                                  border: 1px solid var(--border);
+                                  color: var(--text-muted); }
+
+    .history-quadrant {
+        font-size: 0.7rem;
+        padding: 2px 7px;
+        border-radius: 20px;
+        white-space: nowrap;
+    }
+    .history-quadrant--do_now   { background: #fee2e2; color: #b91c1c; }
+    .history-quadrant--schedule { background: #dbeafe; color: #1d4ed8; }
+    .history-quadrant--delegate { background: #fef9c3; color: #854d0e; }
+    .history-quadrant--avoid    { background: #f3f4f6; color: #6b7280; }
+
+    .history-card-body { flex: 1; min-width: 0; }
+
+    .history-title {
+        font-weight: 600;
+        font-size: 0.95rem;
+        margin-bottom: 0.2rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .history-desc {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        margin-bottom: 0.35rem;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .history-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.6rem;
+        font-size: 0.75rem;
+        color: var(--text-muted);
+    }
+
+    .history-card-right {
+        text-align: right;
+        flex-shrink: 0;
+        font-size: 0.78rem;
+        color: var(--text-muted);
+    }
+
+    .history-time { margin-bottom: 0.35rem; white-space: nowrap; }
+
+    .history-urgency-row {
+        display: flex;
+        gap: 4px;
+        justify-content: flex-end;
+    }
+
+    .history-pill {
+        background: var(--bg-primary, #f9fafb);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 1px 6px;
+        font-size: 0.7rem;
+        white-space: nowrap;
+    }
+
+    .history-empty {
+        text-align: center;
+        padding: 4rem 1rem;
+        color: var(--text-muted);
+    }
+    .history-empty-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+    .history-empty p    { margin: 0.25rem 0; }
+</style>
+{% endblock %}

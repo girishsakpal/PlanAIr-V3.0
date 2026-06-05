@@ -33,6 +33,7 @@
             <a href="{{ url_for('schedule.week_view') }}">Week</a>
             <a href="{{ url_for('schedule.busy_hours_setup') }}">Busy Hours</a>
             <a href="{{ url_for('insights.insights') }}">Insights</a>
+            <a href="{{ url_for('tasks.task_history') }}">History</a>
         </div>
 
         {% if current_user.is_authenticated %}

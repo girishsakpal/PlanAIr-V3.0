@@ -58,3 +58,29 @@ class TaskDependency(db.Model):
     __table_args__ = (
         db.UniqueConstraint('task_id', 'depends_on_id', name='unique_dependency'),
     )
+
+class TaskHistory(db.Model):
+    """
+    Immutable log entry created whenever a task is completed or deleted.
+    Preserves the task's key attributes at the moment of the event so
+    the user can review their full task history even after deletion.
+    """
+    __tablename__ = 'task_history'
+
+    id              = db.Column(db.Integer, primary_key=True)
+    user_id         = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    # original task id — kept for reference even after task deletion
+    original_task_id = db.Column(db.Integer, nullable=True)
+    title           = db.Column(db.String(200), nullable=False)
+    description     = db.Column(db.Text, nullable=True)
+    urgency         = db.Column(db.Integer, nullable=False)
+    importance      = db.Column(db.Integer, nullable=False)
+    estimated_hours = db.Column(db.Float, nullable=False)
+    completed_hours = db.Column(db.Float, default=0.0)
+    deadline        = db.Column(db.Date, nullable=True)
+    quadrant        = db.Column(db.String(30), nullable=True)
+    is_recurring    = db.Column(db.Boolean, default=False)
+    # 'completed' or 'deleted'
+    event_type      = db.Column(db.String(20), nullable=False)
+    event_at        = db.Column(db.DateTime, default=datetime.utcnow)
+    task_created_at = db.Column(db.DateTime, nullable=True)

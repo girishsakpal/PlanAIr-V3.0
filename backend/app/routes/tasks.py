@@ -2,7 +2,7 @@ from flask import (Blueprint, render_template, redirect, url_for,
                    flash, request, jsonify)
 from flask_login import login_required, current_user
 from app import db
-from app.models.task import Task, TaskDependency
+from app.models.task import Task, TaskDependency, TaskHistory
 from app.forms import TaskForm
 from datetime import datetime, date
 from app.models.mood import MoodLog, ProductivityLog
@@ -133,6 +133,23 @@ def delete_task(task_id):
     task = Task.query.filter_by(
         id=task_id, user_id=current_user.id
     ).first_or_404()
+    # snapshot into history before deleting
+    history = TaskHistory(
+        user_id          = current_user.id,
+        original_task_id = task.id,
+        title            = task.title,
+        description      = task.description,
+        urgency          = task.urgency,
+        importance       = task.importance,
+        estimated_hours  = task.estimated_hours,
+        completed_hours  = task.completed_hours or 0,
+        deadline         = task.deadline,
+        quadrant         = task.quadrant,
+        is_recurring     = task.is_recurring,
+        event_type       = 'deleted',
+        task_created_at  = task.created_at,
+    )
+    db.session.add(history)
     db.session.delete(task)
     db.session.commit()
     flash(f'Task "{task.title}" deleted.', 'info')
@@ -147,7 +164,26 @@ def update_status(task_id):
     ).first_or_404()
     new_status = request.json.get('status')
     if new_status in ['pending', 'in-progress', 'done', 'delayed']:
+        prev_status = task.status
         task.status = new_status
+        # snapshot when task transitions TO done for the first time
+        if new_status == 'done' and prev_status != 'done':
+            history = TaskHistory(
+                user_id          = current_user.id,
+                original_task_id = task.id,
+                title            = task.title,
+                description      = task.description,
+                urgency          = task.urgency,
+                importance       = task.importance,
+                estimated_hours  = task.estimated_hours,
+                completed_hours  = task.completed_hours or 0,
+                deadline         = task.deadline,
+                quadrant         = task.quadrant,
+                is_recurring     = task.is_recurring,
+                event_type       = 'completed',
+                task_created_at  = task.created_at,
+            )
+            db.session.add(history)
         db.session.commit()
         return jsonify({'success': True})
     return jsonify({'success': False}), 400
@@ -370,6 +406,17 @@ def remove_dependency(dep_id):
     db.session.delete(dep)
     db.session.commit()
     return jsonify({'success': True})
+
+
+
+@tasks_bp.route('/history')
+@login_required
+def task_history():
+    """Chronological log of all completed and deleted tasks."""
+    entries = TaskHistory.query.filter_by(
+        user_id=current_user.id
+    ).order_by(TaskHistory.event_at.desc()).all()
+    return render_template('tasks/history.html', entries=entries)
 
 
 def _would_create_cycle(task_id, new_depends_on_id):
