@@ -132,12 +132,17 @@ def generate_schedule():
         flash('Please set your busy hours first.', 'warning')
         return redirect(url_for('schedule.busy_hours_setup'))
 
+    now = datetime.now()
     clear_all_suggestions(current_user.id)
     schedule_tasks(current_user.id, days_ahead=14)
     schedule_recurring_tasks(current_user.id, days_ahead=14)
     run_suggestion_engine(current_user.id)
 
-    flash('Your schedule has been generated!', 'success')
+    flash(
+        f'Schedule generated from {now.strftime("%I:%M %p")} onwards — '
+        f'no tasks scheduled before this time today.',
+        'success'
+    )
     return redirect(url_for('schedule.schedule_view'))
 
 

@@ -4,10 +4,10 @@
 {% block content %}
 <div class="setup-container">
     <div class="setup-header">
-        <h2>{% if is_edit %}Edit your busy hours{% else %}When are you unavailable?{% endif %}</h2>
+        <h2>{% if is_edit %}Edit your schedule{% else %}When are you available?{% endif %}</h2>
         <p class="text-muted">
-            Click and drag on the grid to mark your busy blocks.
-            PlanAIr will only schedule tasks in your free time.
+            Click and drag on the grid to mark your <strong>free hours</strong> — highlighted in purple.
+            PlanAIr will only schedule tasks during your free time.
         </p>
     </div>
 
@@ -16,8 +16,8 @@
         <input type="hidden" name="busy_hours_data" id="busy-hours-data" value="[]">
 
         <div class="grid-legend">
-            <span class="legend-free">Free</span>
-            <span class="legend-busy">Busy</span>
+            <span class="legend-free">Free (available)</span>
+            <span class="legend-busy">Busy (unavailable)</span>
         </div>
 
         <div class="time-grid-wrapper">
@@ -56,72 +56,99 @@
 
 {% block extra_js %}
 <script>
-    const existingData = {{ existing_data | tojson }};
-    let busySlots = new Set();
+    const existingBusyData = {{ existing_data | tojson }};
+
+    // freeSlots = hours the user IS available (purple).
+    // Everything else is considered busy.
+    // Grid range: hours 6..23 (18 slots per day, 7 days)
+    const ALL_HOURS = Array.from({length: 18}, (_, i) => i + 6); // 6..23
+    const ALL_DAYS  = [0, 1, 2, 3, 4, 5, 6];
+
+    // Build free set: start with ALL slots marked free, then remove existing busy ones
+    let freeSlots = new Set();
+    ALL_DAYS.forEach(d => ALL_HOURS.forEach(h => freeSlots.add(`${d}-${h}`)));
 
     function slotKey(day, hour) { return `${day}-${hour}`; }
 
     function toggleCell(cell) {
-        const day = parseInt(cell.dataset.day);
+        const day  = parseInt(cell.dataset.day);
         const hour = parseInt(cell.dataset.hour);
-        const key = slotKey(day, hour);
-        if (busySlots.has(key)) {
-            busySlots.delete(key);
-            cell.classList.remove('busy');
-        } else {
-            busySlots.add(key);
+        const key  = slotKey(day, hour);
+        if (freeSlots.has(key)) {
+            freeSlots.delete(key);
+            cell.classList.remove('free');
             cell.classList.add('busy');
+        } else {
+            freeSlots.add(key);
+            cell.classList.add('free');
+            cell.classList.remove('busy');
         }
         updateHiddenInput();
     }
 
     function updateHiddenInput() {
+        // Send busy hours (non-free slots) to the backend — same format as before
         const blocks = [];
-        busySlots.forEach(key => {
-            const [day, hour] = key.split('-').map(Number);
-            const endHour = hour + 1;
-            blocks.push({
-                day: day,
-                start: `${String(hour).padStart(2, '0')}:00`,
-                end: endHour >= 24 ? '23:59' : `${String(endHour).padStart(2, '0')}:00`,
-                label: ''
+        ALL_DAYS.forEach(day => {
+            ALL_HOURS.forEach(hour => {
+                if (!freeSlots.has(slotKey(day, hour))) {
+                    const endHour = hour + 1;
+                    blocks.push({
+                        day:   day,
+                        start: `${String(hour).padStart(2, '0')}:00`,
+                        end:   endHour >= 24 ? '23:59' : `${String(endHour).padStart(2, '0')}:00`,
+                        label: ''
+                    });
+                }
             });
         });
         document.getElementById('busy-hours-data').value = JSON.stringify(blocks);
     }
 
-    // load existing blocks on edit
     function loadExisting() {
-        existingData.forEach(block => {
-            const hour = parseInt(block.start.split(':')[0]);
-            const key = slotKey(block.day, hour);
-            busySlots.add(key);
-            const cell = document.querySelector(
-                `.time-cell[data-day="${block.day}"][data-hour="${hour}"]`
-            );
-            if (cell) cell.classList.add('busy');
+        if (existingBusyData.length === 0) {
+            // Brand-new user: start completely free (all purple) — nothing to remove
+        } else {
+            // Editing: existing data = busy hours → remove those from freeSlots
+            existingBusyData.forEach(block => {
+                const hour = parseInt(block.start.split(':')[0]);
+                const key  = slotKey(block.day, hour);
+                freeSlots.delete(key);
+            });
+        }
+
+        // Render the grid
+        document.querySelectorAll('.time-cell').forEach(cell => {
+            const key = slotKey(cell.dataset.day, cell.dataset.hour);
+            if (freeSlots.has(key)) {
+                cell.classList.add('free');
+            } else {
+                cell.classList.add('busy');
+            }
         });
+
         updateHiddenInput();
     }
 
-    // drag to select multiple cells
+    // Drag-to-paint
     let isDragging = false;
-    let dragMode = null; // 'add' or 'remove'
+    let dragMode   = null; // 'free' or 'busy'
 
     document.querySelectorAll('.time-cell').forEach(cell => {
         cell.addEventListener('mousedown', e => {
             isDragging = true;
-            const key = slotKey(cell.dataset.day, cell.dataset.hour);
-            dragMode = busySlots.has(key) ? 'remove' : 'add';
+            const key  = slotKey(cell.dataset.day, cell.dataset.hour);
+            // If clicking a free cell → make it busy, and vice-versa
+            dragMode = freeSlots.has(key) ? 'busy' : 'free';
             toggleCell(cell);
             e.preventDefault();
         });
         cell.addEventListener('mouseover', () => {
             if (!isDragging) return;
-            const key = slotKey(cell.dataset.day, cell.dataset.hour);
-            const isBusy = busySlots.has(key);
-            if (dragMode === 'add' && !isBusy) toggleCell(cell);
-            if (dragMode === 'remove' && isBusy) toggleCell(cell);
+            const key    = slotKey(cell.dataset.day, cell.dataset.hour);
+            const isFree = freeSlots.has(key);
+            if (dragMode === 'busy' && isFree)  toggleCell(cell);
+            if (dragMode === 'free' && !isFree) toggleCell(cell);
         });
     });
     document.addEventListener('mouseup', () => { isDragging = false; });
@@ -166,12 +193,12 @@
     }
 
     .legend-free::before {
-        background: var(--bg-secondary);
-        border: 1px solid var(--border);
+        background: var(--primary);
     }
 
     .legend-busy::before {
-        background: var(--primary);
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
     }
 
     .time-grid-wrapper {
@@ -231,9 +258,16 @@
         border-color: var(--primary);
     }
 
-    .time-cell.busy {
+    /* Free = available = purple */
+    .time-cell.free {
         background: var(--primary);
         border-color: var(--primary-dark);
+    }
+
+    /* Busy = unavailable = muted grey (default look but explicit class for clarity) */
+    .time-cell.busy {
+        background: var(--bg-secondary);
+        border-color: var(--border);
     }
 
     .setup-actions {
