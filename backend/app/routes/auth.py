@@ -43,8 +43,8 @@ def signup():
             return render_template('auth/signup.html', form=form)
         
         user = User(
-            username=form.username.data,
-            email=form.email.data.lower()
+            name=form.name.data.strip(),
+            username=form.username.data
         )
         user.set_password(form.password.data)
         db.session.add(user)
@@ -66,7 +66,7 @@ def login():
 
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data.lower()).first()
+        user = User.query.filter_by(username=form.username.data).first()
 
         if user and user.check_password(form.password.data):
             login_user(user, remember=form.remember.data)
@@ -80,7 +80,7 @@ def login():
 
             return redirect(next_page or url_for('tasks.dashboard'))
 
-        flash('Incorrect email or password.', 'danger')
+        flash('Incorrect username or password.', 'danger')
 
     return render_template('auth/login.html', form=form)
 

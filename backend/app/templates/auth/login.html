@@ -1,6 +1,27 @@
 {% extends "base.html" %}
 {% block title %}Log In — PlanAIr{% endblock %}
 
+{% block extra_css %}
+<style>
+    .username-input-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+    .username-prefix {
+        position: absolute;
+        left: 0.75rem;
+        color: var(--primary);
+        font-weight: 600;
+        font-size: 1rem;
+        pointer-events: none;
+    }
+    .username-input {
+        padding-left: 1.75rem !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="auth-container">
     <div class="auth-card">
@@ -11,9 +32,12 @@
             {{ form.hidden_tag() }}
 
             <div class="form-group">
-                {{ form.email.label }}
-                {{ form.email(class="form-input", placeholder="you@example.com") }}
-                {% for error in form.email.errors %}
+                {{ form.username.label }}
+                <div class="username-input-wrap">
+                    <span class="username-prefix">@</span>
+                    {{ form.username(class="form-input username-input", placeholder="your_username") }}
+                </div>
+                {% for error in form.username.errors %}
                     <span class="form-error">{{ error }}</span>
                 {% endfor %}
             </div>

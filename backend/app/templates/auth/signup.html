@@ -14,17 +14,21 @@
             {{ form.hidden_tag() }}
 
             <div class="form-group">
-                {{ form.username.label }}
-                {{ form.username(class="form-input", placeholder="e.g. john_doe") }}
-                {% for error in form.username.errors %}
+                {{ form.name.label }}
+                {{ form.name(class="form-input", placeholder="e.g. John Doe") }}
+                {% for error in form.name.errors %}
                 <span class="form-error">{{ error }}</span>
                 {% endfor %}
             </div>
 
             <div class="form-group">
-                {{ form.email.label }}
-                {{ form.email(class="form-input", placeholder="you@example.com") }}
-                {% for error in form.email.errors %}
+                {{ form.username.label }}
+                <div class="username-input-wrap">
+                    <span class="username-prefix">@</span>
+                    {{ form.username(class="form-input username-input", placeholder="e.g. john_doe") }}
+                </div>
+                <span class="form-hint">This is your unique ID used to log in.</span>
+                {% for error in form.username.errors %}
                 <span class="form-error">{{ error }}</span>
                 {% endfor %}
             </div>
@@ -108,7 +112,7 @@
                 reserves the right to suspend or terminate accounts that violate these terms.</p>
 
             <h4>4. Data and Privacy</h4>
-            <p>PlanAIr stores the following data associated with your account: your username, email address, tasks,
+            <p>PlanAIr stores the following data associated with your account: your name, username, tasks,
                 schedules, mood logs, and productivity scores. This data is used solely to provide the scheduling and
                 productivity features of the application. Your data is not sold, shared, or disclosed to any third
                 party. Your password is stored as a secure hash and is never accessible in plain text by anyone,
@@ -149,6 +153,33 @@
 
 {% block extra_css %}
 <style>
+    .username-input-wrap {
+        position: relative;
+        display: flex;
+        align-items: center;
+    }
+
+    .username-prefix {
+        position: absolute;
+        left: 0.75rem;
+        color: var(--primary);
+        font-weight: 600;
+        font-size: 1rem;
+        pointer-events: none;
+        line-height: 1;
+    }
+
+    .username-input {
+        padding-left: 1.75rem !important;
+    }
+
+    .form-hint {
+        display: block;
+        font-size: 0.75rem;
+        color: var(--text-muted, #888);
+        margin-top: 0.25rem;
+    }
+
     .invite-badge {
         display: inline-block;
         background: rgba(99, 102, 241, 0.1);

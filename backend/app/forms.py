@@ -2,21 +2,23 @@ from flask_wtf import FlaskForm
 from wtforms import (StringField, PasswordField, BooleanField, SubmitField,
                      TextAreaField, IntegerField, FloatField, DateField,
                      SelectField, HiddenField, TimeField)
-from wtforms.validators import (DataRequired, Email, EqualTo, Length,
-                                ValidationError, Optional, NumberRange)
+from wtforms.validators import (DataRequired, EqualTo, Length,
+                                ValidationError, Optional, NumberRange, Regexp)
 from app.models.user import User
 
 
 from flask import current_app
 
 class SignupForm(FlaskForm):
+    name = StringField('Your Name', validators=[
+        DataRequired(),
+        Length(min=1, max=120, message='Name must be 1–120 characters')
+    ])
     username = StringField('Username', validators=[
         DataRequired(),
-        Length(min=3, max=80, message='Username must be 3–80 characters')
-    ])
-    email = StringField('Email', validators=[
-        DataRequired(),
-        Email(message='Enter a valid email address')
+        Length(min=3, max=80, message='Username must be 3–80 characters'),
+        Regexp(r'^[a-zA-Z0-9._]+$',
+               message='Username may only contain letters, numbers, dots, and underscores')
     ])
     password = PasswordField('Password', validators=[
         DataRequired(),
@@ -37,11 +39,6 @@ class SignupForm(FlaskForm):
         if user:
             raise ValidationError('Username already taken. Please choose another.')
 
-    def validate_email(self, email):
-        user = User.query.filter_by(email=email.data).first()
-        if user:
-            raise ValidationError('Email already registered. Please log in instead.')
-
     def validate_promo_code(self, promo_code):
         valid_code = current_app.config.get('SIGNUP_PROMO_CODE', '')
         if promo_code.data.strip().upper() != valid_code.upper():
@@ -49,9 +46,8 @@ class SignupForm(FlaskForm):
 
 
 class LoginForm(FlaskForm):
-    email = StringField('Email', validators=[
-        DataRequired(),
-        Email()
+    username = StringField('Username', validators=[
+        DataRequired()
     ])
     password = PasswordField('Password', validators=[
         DataRequired()

@@ -17,8 +17,8 @@ class User(db.Model, UserMixin):
     __tablename__ = 'users'
 
     id             = db.Column(db.Integer, primary_key=True)
-    username       = db.Column(db.String(80), unique=True, nullable=False)
-    email          = db.Column(db.String(120), unique=True, nullable=False)
+    name           = db.Column(db.String(120), nullable=False)          # display name
+    username       = db.Column(db.String(80), unique=True, nullable=False)  # login ID
     password_hash  = db.Column(db.String(256), nullable=False)
     dark_mode      = db.Column(db.Boolean, default=False)
     busy_hours_set = db.Column(db.Boolean, default=False)
