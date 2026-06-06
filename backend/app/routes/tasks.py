@@ -416,6 +416,39 @@ def remove_dependency(dep_id):
 
 
 
+
+@tasks_bp.route('/tasks/<int:task_id>/complete-recurring', methods=['POST'])
+@login_required
+def complete_recurring(task_id):
+    """Permanently retire a recurring task — mark done and add to history."""
+    task = Task.query.filter_by(
+        id=task_id, user_id=current_user.id
+    ).first_or_404()
+
+    if not task.is_recurring:
+        return jsonify({'error': 'Not a recurring task'}), 400
+
+    task.status = 'done'
+    history = TaskHistory(
+        user_id          = current_user.id,
+        original_task_id = task.id,
+        title            = task.title,
+        description      = task.description,
+        urgency          = task.urgency,
+        importance       = task.importance,
+        estimated_hours  = task.estimated_hours,
+        completed_hours  = task.completed_hours or 0,
+        deadline         = task.deadline,
+        quadrant         = task.quadrant,
+        is_recurring     = True,
+        event_type       = 'completed',
+        task_created_at  = task.created_at,
+    )
+    db.session.add(history)
+    db.session.commit()
+    return jsonify({'success': True})
+
+
 @tasks_bp.route('/history')
 @login_required
 def task_history():

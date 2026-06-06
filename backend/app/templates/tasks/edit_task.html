@@ -33,7 +33,7 @@
                     {{ form.estimated_hours.label }}
                     {{ form.estimated_hours(class="form-input") }}
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="deadline-group-edit" style="display:{{ 'none' if task.is_recurring else 'block' }}">
                     {{ form.deadline.label }}
                     {{ form.deadline(class="form-input", type="date") }}
                 </div>
@@ -73,6 +73,7 @@
         const show = this.checked ? 'block' : 'none';
         document.getElementById('recurrence-group-edit').style.display    = show;
         document.getElementById('preferred-time-group-edit').style.display = show;
+        document.getElementById('deadline-group-edit').style.display = this.checked ? 'none' : 'block';
         const isWeekly = document.querySelector('[name=recurrence_type]').value === 'weekly';
         document.getElementById('preferred-day-group-edit').style.display =
             (this.checked && isWeekly) ? 'block' : 'none';

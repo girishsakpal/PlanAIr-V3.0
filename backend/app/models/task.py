@@ -19,6 +19,7 @@ class Task(db.Model):
     recurrence_type = db.Column(db.String(20), nullable=True) # 'daily' or 'weekly'
     preferred_time  = db.Column(db.Time, nullable=True)        # fixed time for recurring tasks
     preferred_day   = db.Column(db.Integer, nullable=True)       # 0=Mon..6=Sun for weekly tasks
+    days_completed  = db.Column(db.Integer, default=0)             # streak counter for recurring tasks
     status          = db.Column(db.String(20), default='pending')
     quadrant        = db.Column(db.String(30), nullable=True)
     created_at      = db.Column(db.DateTime, default=datetime.utcnow)

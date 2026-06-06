@@ -176,6 +176,9 @@ def toggle_session(session_id):
         session.is_completed  = False
         session.completed_at  = None
         session.logged_hours  = None
+        # decrement streak counter for recurring tasks
+        if task.is_recurring:
+            task.days_completed = max(0, (task.days_completed or 0) - 1)
     else:
         # if hours_worked not provided, assume full allocated time
         actual_hours = float(hours_worked) if hours_worked is not None else allocated_hours
@@ -192,9 +195,12 @@ def toggle_session(session_id):
         session.is_completed  = True
         session.completed_at  = datetime.utcnow()
         session.logged_hours  = actual_hours
+        # increment streak counter for recurring tasks
+        if task.is_recurring:
+            task.days_completed = (task.days_completed or 0) + 1
 
-    # auto-complete task when all hours done
-    if task.completed_hours >= task.estimated_hours:
+    # auto-complete task when all hours done (but NOT recurring — they keep going)
+    if not task.is_recurring and task.completed_hours >= task.estimated_hours:
         task.completed_hours = task.estimated_hours
         was_done_before = task.status == 'done'
         task.status     = 'done'
@@ -216,6 +222,11 @@ def toggle_session(session_id):
                 task_created_at  = task.created_at,
             )
             db.session.add(history)
+    elif task.is_recurring:
+        # recurring tasks always stay pending/in-progress — reset hours so
+        # they keep getting scheduled each day/week
+        task.completed_hours = 0
+        task.status = 'in-progress'
     else:
         all_sessions  = ScheduleSession.query.filter_by(task_id=task.id).all()
         any_completed = any(s.is_completed for s in all_sessions)

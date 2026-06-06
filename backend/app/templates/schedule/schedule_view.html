@@ -72,7 +72,7 @@
                         </button>
                     </div>
                     {% else %}
-                    <!-- not yet completed — show edit + log buttons -->
+                    <!-- not yet completed — show edit + action buttons -->
                     <div class="session-actions">
                         <button class="btn-edit-session" title="Move or resize this session"
                             onclick="openEditModal(
@@ -82,10 +82,18 @@
                                 '{{ s.start_time.strftime('%H:%M') }}',
                                 {{ (s.end_time.hour * 60 + s.end_time.minute) - (s.start_time.hour * 60 + s.start_time.minute) }}
                             )">✎ Edit</button>
+                        {% if t and t.is_recurring %}
+                        <button class="btn-tick-session" id="log-btn-{{ s.id }}"
+                            onclick="tickRecurringSession({{ s.id }}, {{ t.days_completed or 0 }})"
+                            title="Mark today's session as done">
+                            ✓ Done
+                        </button>
+                        {% else %}
                         <button class="btn-log-session" id="log-btn-{{ s.id }}"
                             onclick="openLogModal({{ s.id }}, {{ ((s.end_time.hour * 60 + s.end_time.minute) - (s.start_time.hour * 60 + s.start_time.minute)) / 60 | round(2) }})">
                             Log hours
                         </button>
+                        {% endif %}
                     </div>
                     {% endif %}
                 </div>
@@ -157,7 +165,7 @@
 
         <div style="display:flex;gap:0.75rem">
             <button class="btn btn-primary" style="flex:1" onclick="submitEditSession()">Save</button>
-            <button class="btn btn-outline btn-danger" style="flex:1" onclick="confirmDeleteSession()">Remove session</button>
+            <button class="btn btn-danger" style="flex:1" onclick="confirmDeleteSession()">Remove session</button>
         </div>
         <p class="text-muted text-sm" style="margin-top:0.6rem;font-size:0.76rem">
             "Remove session" only removes this time-slot — the task stays in your list.
@@ -476,6 +484,32 @@
     }
     // ─────────────────────────────────────────────────────────────────────────
 
+    // ── Recurring session tick ───────────────────────────────────────────────
+    function tickRecurringSession(sessionId, currentDays) {
+        fetch(`/schedule/session/${sessionId}/toggle`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({ hours_worked: null, unchecking: false })
+        })
+        .then(r => r.json())
+        .then(data => {
+            const item = document.getElementById(`session-${sessionId}`);
+            if (!item) return;
+            // replace tick button with streak badge
+            const btn = document.getElementById(`log-btn-${sessionId}`);
+            const newDays = (currentDays || 0) + 1;
+            if (btn) {
+                btn.outerHTML = `<span class="recurring-streak-badge">🔥 ${newDays} day${newDays !== 1 ? 's' : ''}</span>`;
+            }
+            item.classList.add('completed');
+            updateSummary();
+        });
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
 </script>
 {% endblock %}
 
@@ -726,6 +760,27 @@
         align-items: center;
         flex-wrap: wrap;
         justify-content: flex-end;
+    }
+
+    .btn-tick-session {
+        background: var(--primary);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 0.3rem 0.75rem;
+        font-size: 0.82rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    .btn-tick-session:hover {
+        opacity: 0.88;
+    }
+    .recurring-streak-badge {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: var(--primary);
+        white-space: nowrap;
     }
 
 </style>
