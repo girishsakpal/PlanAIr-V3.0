@@ -17,6 +17,8 @@ class Task(db.Model):
     deadline        = db.Column(db.Date, nullable=True)
     is_recurring    = db.Column(db.Boolean, default=False)
     recurrence_type = db.Column(db.String(20), nullable=True) # 'daily' or 'weekly'
+    preferred_time  = db.Column(db.Time, nullable=True)        # fixed time for recurring tasks
+    preferred_day   = db.Column(db.Integer, nullable=True)       # 0=Mon..6=Sun for weekly tasks
     status          = db.Column(db.String(20), default='pending')
     quadrant        = db.Column(db.String(30), nullable=True)
     created_at      = db.Column(db.DateTime, default=datetime.utcnow)
@@ -80,6 +82,8 @@ class TaskHistory(db.Model):
     deadline        = db.Column(db.Date, nullable=True)
     quadrant        = db.Column(db.String(30), nullable=True)
     is_recurring    = db.Column(db.Boolean, default=False)
+    preferred_time  = db.Column(db.Time, nullable=True)
+    preferred_day   = db.Column(db.Integer, nullable=True)
     # 'completed' or 'deleted'
     event_type      = db.Column(db.String(20), nullable=False)
     event_at        = db.Column(db.DateTime, default=datetime.utcnow)

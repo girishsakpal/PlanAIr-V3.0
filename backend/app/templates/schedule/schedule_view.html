@@ -72,11 +72,21 @@
                         </button>
                     </div>
                     {% else %}
-                    <!-- not yet completed — show log button -->
-                    <button class="btn-log-session" id="log-btn-{{ s.id }}"
-                        onclick="openLogModal({{ s.id }}, {{ ((s.end_time.hour * 60 + s.end_time.minute) - (s.start_time.hour * 60 + s.start_time.minute)) / 60 | round(2) }})">
-                        Log hours
-                    </button>
+                    <!-- not yet completed — show edit + log buttons -->
+                    <div class="session-actions">
+                        <button class="btn-edit-session" title="Move or resize this session"
+                            onclick="openEditModal(
+                                {{ s.id }},
+                                '{{ (s.session_label or t.title) | replace("'", "\\'") }}',
+                                '{{ s.date }}',
+                                '{{ s.start_time.strftime('%H:%M') }}',
+                                {{ (s.end_time.hour * 60 + s.end_time.minute) - (s.start_time.hour * 60 + s.start_time.minute) }}
+                            )">✎ Edit</button>
+                        <button class="btn-log-session" id="log-btn-{{ s.id }}"
+                            onclick="openLogModal({{ s.id }}, {{ ((s.end_time.hour * 60 + s.end_time.minute) - (s.start_time.hour * 60 + s.start_time.minute)) / 60 | round(2) }})">
+                            Log hours
+                        </button>
+                    </div>
                     {% endif %}
                 </div>
             </div>
@@ -109,6 +119,51 @@
     {% endif %}
 </div>
 {% endif %}
+
+
+<!-- edit / move session modal -->
+<div class="modal-overlay" id="edit-session-modal" onclick="closeEditModal()">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:420px">
+        <div class="modal-header">
+            <h3>Edit Session</h3>
+            <button class="modal-close" onclick="closeEditModal()">&times;</button>
+        </div>
+
+        <p class="text-muted text-sm" id="edit-session-title" style="margin-bottom:1.25rem;font-weight:500"></p>
+
+        <div class="form-group" style="margin-bottom:1rem">
+            <label style="font-size:0.85rem;font-weight:500">Date</label>
+            <input type="date" id="edit-date" class="form-input" style="margin-top:0.3rem">
+        </div>
+
+        <div style="display:flex;gap:0.75rem;margin-bottom:1rem">
+            <div class="form-group" style="flex:1">
+                <label style="font-size:0.85rem;font-weight:500">Start time</label>
+                <input type="time" id="edit-start" class="form-input" style="margin-top:0.3rem">
+            </div>
+            <div class="form-group" style="flex:1">
+                <label style="font-size:0.85rem;font-weight:500">Duration (minutes)</label>
+                <input type="number" id="edit-duration" class="form-input"
+                       min="15" max="480" step="15" style="margin-top:0.3rem">
+            </div>
+        </div>
+
+        <!-- live end-time preview -->
+        <p class="text-muted text-sm" style="margin-bottom:1rem">
+            End time: <strong id="edit-end-preview">—</strong>
+        </p>
+
+        <div id="edit-error" style="display:none;color:#ef4444;font-size:0.83rem;margin-bottom:0.75rem"></div>
+
+        <div style="display:flex;gap:0.75rem">
+            <button class="btn btn-primary" style="flex:1" onclick="submitEditSession()">Save</button>
+            <button class="btn btn-outline btn-danger" style="flex:1" onclick="confirmDeleteSession()">Remove session</button>
+        </div>
+        <p class="text-muted text-sm" style="margin-top:0.6rem;font-size:0.76rem">
+            "Remove session" only removes this time-slot — the task stays in your list.
+        </p>
+    </div>
+</div>
 
 <!-- log hours modal -->
 <div class="modal-overlay" id="log-hours-modal" onclick="closeLogModal()">
@@ -304,6 +359,123 @@
         if (pb) pb.style.width = pct + '%';
         if (span) span.textContent = `${done} / ${total} sessions completed today`;
     }
+    // ── Edit / move session ──────────────────────────────────────────────────
+    let editSessionId = null;
+
+    function openEditModal(sessionId, label, dateStr, startStr, durationMin) {
+        editSessionId = sessionId;
+        document.getElementById('edit-session-title').textContent = label;
+        document.getElementById('edit-date').value     = dateStr;
+        document.getElementById('edit-start').value    = startStr;
+        document.getElementById('edit-duration').value = durationMin;
+        document.getElementById('edit-error').style.display = 'none';
+        document.getElementById('edit-error').textContent   = '';
+        updateEndPreview();
+        document.getElementById('edit-session-modal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+        document.getElementById('edit-session-modal').style.display = 'none';
+        editSessionId = null;
+    }
+
+    function updateEndPreview() {
+        const startVal = document.getElementById('edit-start').value;
+        const durVal   = parseInt(document.getElementById('edit-duration').value);
+        if (!startVal || isNaN(durVal)) {
+            document.getElementById('edit-end-preview').textContent = '—';
+            return;
+        }
+        const [h, m] = startVal.split(':').map(Number);
+        const endMin = h * 60 + m + durVal;
+        if (endMin > 23 * 60 + 59) {
+            document.getElementById('edit-end-preview').textContent = 'past midnight!';
+            return;
+        }
+        const eh = Math.floor(endMin / 60);
+        const em = endMin % 60;
+        document.getElementById('edit-end-preview').textContent =
+            `${String(eh).padStart(2,'0')}:${String(em).padStart(2,'0')}`;
+    }
+
+    document.getElementById('edit-start').addEventListener('input', updateEndPreview);
+    document.getElementById('edit-duration').addEventListener('input', updateEndPreview);
+
+    function showEditError(msg) {
+        const el = document.getElementById('edit-error');
+        el.textContent = msg;
+        el.style.display = 'block';
+    }
+
+    function submitEditSession() {
+        if (!editSessionId) return;
+        const dateVal  = document.getElementById('edit-date').value;
+        const startVal = document.getElementById('edit-start').value;
+        const durVal   = parseInt(document.getElementById('edit-duration').value);
+
+        if (!dateVal || !startVal || isNaN(durVal) || durVal < 15) {
+            showEditError('Please fill in all fields. Minimum duration is 15 minutes.');
+            return;
+        }
+
+        fetch(`/schedule/session/${editSessionId}/reschedule`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({
+                date:               dateVal,
+                start_time:         startVal,
+                duration_minutes:   durVal
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) {
+                showEditError(data.error);
+                return;
+            }
+            // if the moved session is still on the currently viewed date — update in place
+            const currentDate = window.location.search.match(/date=([0-9-]+)/)?.[1]
+                             || new Date().toISOString().slice(0,10);
+            if (data.date === currentDate) {
+                const item = document.getElementById(`session-${editSessionId}`);
+                if (item) {
+                    item.querySelector('.time-start').textContent = data.start_time;
+                    item.querySelector('.time-end').textContent   = data.end_time;
+                }
+                closeEditModal();
+            } else {
+                // session moved to another day — reload so it disappears from this view
+                closeEditModal();
+                window.location.reload();
+            }
+        });
+    }
+
+    function confirmDeleteSession() {
+        if (!editSessionId) return;
+        if (!confirm('Remove this session from the schedule? The task will stay in your list.')) return;
+
+        fetch(`/schedule/session/${editSessionId}/delete`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCSRFToken() }
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) { showEditError(data.error); return; }
+            const item = document.getElementById(`session-${editSessionId}`);
+            if (item) {
+                item.style.transition = 'opacity 0.3s';
+                item.style.opacity = '0';
+                setTimeout(() => { item.remove(); updateSummary(); }, 300);
+            }
+            closeEditModal();
+        });
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
 </script>
 {% endblock %}
 
@@ -515,5 +687,46 @@
         border-radius: 20px;
         transition: width 0.3s;
     }
+    /* Edit session button */
+    .btn-edit-session {
+        background: none;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.85rem;
+        cursor: pointer;
+        color: var(--text-muted);
+        transition: all 0.15s;
+        line-height: 1;
+    }
+    .btn-edit-session:hover {
+        background: var(--bg-secondary);
+        color: var(--primary);
+        border-color: var(--primary);
+    }
+
+    /* Danger outline button */
+    .btn-outline.btn-danger {
+        border-color: #ef4444;
+        color: #ef4444;
+    }
+    .btn-outline.btn-danger:hover {
+        background: #ef4444;
+        color: #fff;
+    }
+
+    /* Subtle drag hint on hoverable cards */
+    .timeline-card:not(.timeline-item.completed .timeline-card) {
+        cursor: default;
+    }
+
+    .session-actions {
+        display: flex;
+        gap: 0.4rem;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
+
 </style>
 {% endblock %}

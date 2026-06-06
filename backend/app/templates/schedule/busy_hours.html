@@ -107,9 +107,12 @@
 
     function loadExisting() {
         if (existingBusyData.length === 0) {
-            // Brand-new user: start completely free (all purple) — nothing to remove
+            // Brand-new user: start ALL grey (busy) — user drags to mark free hours.
+            // Clear the freeSlots set so nothing is purple by default.
+            freeSlots.clear();
         } else {
-            // Editing: existing data = busy hours → remove those from freeSlots
+            // Editing existing schedule: data = saved busy blocks.
+            // freeSlots already contains ALL hours; remove the busy ones.
             existingBusyData.forEach(block => {
                 const hour = parseInt(block.start.split(':')[0]);
                 const key  = slotKey(block.day, hour);

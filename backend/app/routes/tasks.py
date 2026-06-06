@@ -110,21 +110,19 @@ def add_task():
             deadline        = form.deadline.data,
             is_recurring    = form.is_recurring.data,
             recurrence_type = form.recurrence_type.data or None,
+            preferred_time  = form.preferred_time.data if form.is_recurring.data else None,
+            preferred_day   = int(form.preferred_day.data) if (form.is_recurring.data and form.preferred_day.data) else None,
         )
         task.quadrant = task.compute_quadrant()
         db.session.add(task)
         db.session.commit()
-        flash(f'Task "{task.title}" added!', 'success')
+        return jsonify({'success': True, 'message': f'Task "{task.title}" added!'})
     else:
-        # collect all errors into one readable message
-        errors = []
-        for field, msgs in form.errors.items():
-            for msg in msgs:
-                errors.append(msg)
-        if errors:
-            flash(' · '.join(errors), 'danger')
-
-    return redirect(url_for('tasks.dashboard'))
+        # return field-level errors as JSON so the modal can show them inline
+        field_errors = {}
+        for field_name, msgs in form.errors.items():
+            field_errors[field_name] = msgs[0]   # first message per field
+        return jsonify({'success': False, 'errors': field_errors}), 400
 
 
 @tasks_bp.route('/tasks/<int:task_id>/delete', methods=['POST'])
@@ -197,6 +195,13 @@ def edit_task(task_id):
     ).first_or_404()
     form = TaskForm(obj=task)
 
+    # pre-populate preferred_time / preferred_day for recurring tasks on GET
+    if request.method == 'GET':
+        if task.preferred_time:
+            form.preferred_time.data = task.preferred_time
+        if task.preferred_day is not None:
+            form.preferred_day.data = str(task.preferred_day)
+
     if form.validate_on_submit():
         task.title           = form.title.data
         task.description     = form.description.data
@@ -206,6 +211,8 @@ def edit_task(task_id):
         task.deadline        = form.deadline.data
         task.is_recurring    = form.is_recurring.data
         task.recurrence_type = form.recurrence_type.data or None
+        task.preferred_time  = form.preferred_time.data if form.is_recurring.data else None
+        task.preferred_day   = int(form.preferred_day.data) if (form.is_recurring.data and form.preferred_day.data) else None
         task.quadrant        = task.compute_quadrant()
 
         # ── recheck completion status after hours change ──────────────

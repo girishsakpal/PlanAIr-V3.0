@@ -542,7 +542,9 @@ def schedule_recurring_tasks(user_id, days_ahead=14):
             target_date = today + timedelta(days=day_offset)
 
             if task.recurrence_type == 'weekly':
-                if target_date.weekday() != today.weekday():
+                # use user's chosen day; fall back to today's weekday if not set
+                target_weekday = task.preferred_day if task.preferred_day is not None else today.weekday()
+                if target_date.weekday() != target_weekday:
                     continue
 
             existing = ScheduleSession.query.filter_by(
@@ -553,18 +555,70 @@ def schedule_recurring_tasks(user_id, days_ahead=14):
             if existing:
                 continue
 
-            slot = find_next_slot(user_id, target_date, session_min)
-            if slot:
-                start_t, end_t = slot
-                session = ScheduleSession(
-                    user_id       = user_id,
-                    task_id       = task.id,
-                    date          = target_date,
-                    start_time    = start_t,
-                    end_time      = end_t,
-                    session_label = task.title,
-                    is_completed  = False
+            # --- preferred time pinning ---
+            if task.preferred_time:
+                pref_start_min = time_to_minutes(task.preferred_time)
+                pref_end_min   = pref_start_min + session_min
+
+                # for today: if preferred time has already passed, skip today only
+                if target_date == date.today():
+                    now_min = datetime.now().hour * 60 + datetime.now().minute
+                    if pref_start_min < now_min:
+                        continue   # skip today, will schedule from tomorrow onward
+
+                # check against busy-hours blocks for this weekday
+                busy_blocks = BusyHours.query.filter_by(
+                    user_id=user_id,
+                    day_of_week=target_date.weekday()
+                ).all()
+                busy_conflict = any(
+                    not (pref_end_min <= time_to_minutes(b.start_time)
+                         or pref_start_min >= time_to_minutes(b.end_time))
+                    for b in busy_blocks
                 )
-                db.session.add(session)
+
+                # check against other already-booked sessions on this date
+                # (raw session times, no break padding — recurring tasks own their fixed slot)
+                other_sessions = ScheduleSession.query.filter(
+                    ScheduleSession.user_id == user_id,
+                    ScheduleSession.date    == target_date,
+                    ScheduleSession.task_id != task.id
+                ).all()
+                session_conflict = any(
+                    not (pref_end_min <= time_to_minutes(s.start_time)
+                         or pref_start_min >= time_to_minutes(s.end_time))
+                    for s in other_sessions
+                )
+
+                if not busy_conflict and not session_conflict                         and pref_end_min <= WORKING_END_HR * 60:
+                    start_t = minutes_to_time(pref_start_min)
+                    end_t   = minutes_to_time(pref_end_min)
+                    session = ScheduleSession(
+                        user_id       = user_id,
+                        task_id       = task.id,
+                        date          = target_date,
+                        start_time    = start_t,
+                        end_time      = end_t,
+                        session_label = task.title,
+                        is_completed  = False
+                    )
+                    db.session.add(session)
+                # if the preferred slot is genuinely blocked, skip this day
+                # (don't fall back — the user wants a fixed time)
+            else:
+                # no preferred time — find the next available slot as before
+                slot = find_next_slot(user_id, target_date, session_min)
+                if slot:
+                    start_t, end_t = slot
+                    session = ScheduleSession(
+                        user_id       = user_id,
+                        task_id       = task.id,
+                        date          = target_date,
+                        start_time    = start_t,
+                        end_time      = end_t,
+                        session_label = task.title,
+                        is_completed  = False
+                    )
+                    db.session.add(session)
 
     db.session.commit()

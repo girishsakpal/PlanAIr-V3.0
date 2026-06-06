@@ -44,6 +44,7 @@
             <button type="submit" class="btn btn-outline btn-sm" id="generate-btn"
                     title="Schedule will start from the current time for today">
                 &#9654; Generate schedule
+                <span class="generate-time-hint" id="generate-time-hint"></span>
             </button>
         </form>
         <button class="btn btn-primary" onclick="openModal('add-task-modal')">
@@ -294,34 +295,42 @@
             <h3>Add New Task</h3>
             <button class="modal-close" onclick="closeModal('add-task-modal')">&times;</button>
         </div>
-        <form method="POST" action="{{ url_for('tasks.add_task') }}" novalidate>
+        <form id="add-task-form" novalidate>
             {{ form.hidden_tag() }}
+            <!-- inline error banner -->
+            <div id="add-task-error" style="display:none;background:#fee2e2;color:#b91c1c;
+                 border-radius:6px;padding:0.6rem 0.85rem;font-size:0.83rem;margin-bottom:0.75rem"></div>
             <div class="form-group">
                 {{ form.title.label }}
-                {{ form.title(class="form-input", placeholder="e.g. Finish project report") }}
+                {{ form.title(class="form-input", id="field-title", placeholder="e.g. Finish project report") }}
+                <span class="field-error" id="err-title"></span>
             </div>
             <div class="form-group">
                 {{ form.description.label }}
-                {{ form.description(class="form-input form-textarea", rows=3) }}
+                {{ form.description(class="form-input form-textarea", id="field-description", rows=3) }}
             </div>
             <div class="form-row">
                 <div class="form-group">
                     {{ form.urgency.label }}
-                    {{ form.urgency(class="form-input form-select") }}
+                    {{ form.urgency(class="form-input form-select", id="field-urgency") }}
+                    <span class="field-error" id="err-urgency"></span>
                 </div>
                 <div class="form-group">
                     {{ form.importance.label }}
-                    {{ form.importance(class="form-input form-select") }}
+                    {{ form.importance(class="form-input form-select", id="field-importance") }}
+                    <span class="field-error" id="err-importance"></span>
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     {{ form.estimated_hours.label }}
-                    {{ form.estimated_hours(class="form-input", placeholder="e.g. 3.5") }}
+                    {{ form.estimated_hours(class="form-input", id="field-estimated_hours", placeholder="e.g. 3.5") }}
+                    <span class="field-error" id="err-estimated_hours"></span>
                 </div>
                 <div class="form-group">
                     {{ form.deadline.label }}
-                    {{ form.deadline(class="form-input", type="date") }}
+                    {{ form.deadline(class="form-input", id="field-deadline", type="date") }}
+                    <span class="field-error" id="err-deadline"></span>
                 </div>
             </div>
             <div class="form-group form-group--checkbox">
@@ -330,9 +339,18 @@
             </div>
             <div class="form-group" id="recurrence-group" style="display:none">
                 {{ form.recurrence_type.label }}
-                {{ form.recurrence_type(class="form-input form-select") }}
+                {{ form.recurrence_type(class="form-input form-select", id="field-recurrence_type") }}
             </div>
-            <button type="submit" class="btn btn-primary btn-full" style="margin-top:1rem">Add Task</button>
+            <div class="form-group" id="preferred-time-group" style="display:none">
+                <label for="preferred_time">Preferred Time <span class="form-hint">(task will be pinned to this time)</span></label>
+                {{ form.preferred_time(class="form-input", id="preferred_time", type="time") }}
+            </div>
+            <div class="form-group" id="preferred-day-group" style="display:none">
+                {{ form.preferred_day.label }}
+                {{ form.preferred_day(class="form-input form-select", id="field-preferred_day") }}
+            </div>
+            <button type="button" class="btn btn-primary btn-full" style="margin-top:1rem"
+                    onclick="submitAddTask()">Add Task</button>
         </form>
     </div>
 </div>
@@ -465,6 +483,18 @@
 
 {% block extra_js %}
 <style>
+
+    .field-error {
+        display: none;
+        color: #ef4444;
+        font-size: 0.78rem;
+        margin-top: 3px;
+    }
+    .form-input.input-error {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 2px rgba(239,68,68,0.15);
+    }
+
     .generate-time-hint {
         font-size: 0.72rem;
         opacity: 0.7;
@@ -489,9 +519,89 @@
     function openModal(id) { document.getElementById(id).style.display = 'flex'; }
     function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
+    // ── Add Task AJAX ────────────────────────────────────────────────────────
+    function clearAddTaskErrors() {
+        document.getElementById('add-task-error').style.display = 'none';
+        document.querySelectorAll('.field-error').forEach(el => {
+            el.textContent = '';
+            el.style.display = 'none';
+        });
+        document.querySelectorAll('#add-task-form .form-input').forEach(el => {
+            el.classList.remove('input-error');
+        });
+    }
+
+    function submitAddTask() {
+        clearAddTaskErrors();
+        const form   = document.getElementById('add-task-form');
+        const data   = new FormData(form);
+        // FormData from a non-<form action> needs manual field collection
+        const payload = new FormData();
+        payload.append('csrf_token', form.querySelector('[name=csrf_token]').value);
+        ['title','description','urgency','importance','estimated_hours',
+         'deadline','recurrence_type','preferred_time','preferred_day'].forEach(name => {
+            const el = form.querySelector(`[name=${name}]`);
+            if (el) payload.append(name, el.value);
+        });
+        const recurEl = form.querySelector('[name=is_recurring]');
+        if (recurEl && recurEl.checked) payload.append('is_recurring', 'y');
+
+        fetch('{{ url_for("tasks.add_task") }}', {
+            method: 'POST',
+            body: payload
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                closeModal('add-task-modal');
+                // reset form fields
+                document.getElementById('add-task-form').querySelectorAll(
+                    'input:not([name=csrf_token]), textarea, select'
+                ).forEach(el => { el.value = el.tagName === 'SELECT' ? el.options[0].value : ''; });
+                document.getElementById('recurrence-group').style.display = 'none';
+                document.getElementById('preferred-time-group').style.display = 'none';
+                document.getElementById('preferred-day-group').style.display = 'none';
+                // show success flash then reload task list
+                window.location.reload();
+            } else {
+                const errors = data.errors || {};
+                let hasInline = false;
+                Object.entries(errors).forEach(([field, msg]) => {
+                    const errEl = document.getElementById(`err-${field}`);
+                    const inEl  = document.getElementById(`field-${field}`);
+                    if (errEl) {
+                        errEl.textContent = msg;
+                        errEl.style.display = 'block';
+                        hasInline = true;
+                    }
+                    if (inEl) inEl.classList.add('input-error');
+                });
+                if (!hasInline) {
+                    // fallback banner for any non-field errors
+                    const banner = document.getElementById('add-task-error');
+                    banner.textContent = Object.values(errors).join(' · ') || 'Please fix the errors above.';
+                    banner.style.display = 'block';
+                }
+            }
+        });
+    }
+    // ────────────────────────────────────────────────────────────────────────
+
+
+
     document.getElementById('is_recurring').addEventListener('change', function () {
-        document.getElementById('recurrence-group').style.display =
-            this.checked ? 'block' : 'none';
+        const show = this.checked ? 'block' : 'none';
+        document.getElementById('preferred-time-group').style.display = show;
+        document.getElementById('recurrence-group').style.display = show;
+        // only show day picker if weekly is already selected
+        const isWeekly = document.getElementById('field-recurrence_type').value === 'weekly';
+        document.getElementById('preferred-day-group').style.display =
+            (this.checked && isWeekly) ? 'block' : 'none';
+    });
+
+    document.getElementById('field-recurrence_type').addEventListener('change', function () {
+        document.getElementById('preferred-day-group').style.display =
+            this.value === 'weekly' ? 'block' : 'none';
     });
 
 

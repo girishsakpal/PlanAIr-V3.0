@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from wtforms import (StringField, PasswordField, BooleanField, SubmitField,
                      TextAreaField, IntegerField, FloatField, DateField,
-                     SelectField, HiddenField)
+                     SelectField, HiddenField, TimeField)
 from wtforms.validators import (DataRequired, Email, EqualTo, Length,
                                 ValidationError, Optional, NumberRange)
 from app.models.user import User
@@ -91,5 +91,13 @@ class TaskForm(FlaskForm):
         ('', 'Select...'),
         ('daily', 'Day'),
         ('weekly', 'Week')
+    ], validators=[Optional()])
+    preferred_time = TimeField('Preferred Time (for recurring tasks)',
+        validators=[Optional()], format='%H:%M')
+    preferred_day = SelectField('Repeat on Day (weekly only)', choices=[
+        ('', 'Select day...'),
+        ('0', 'Monday'), ('1', 'Tuesday'), ('2', 'Wednesday'),
+        ('3', 'Thursday'), ('4', 'Friday'),
+        ('5', 'Saturday'), ('6', 'Sunday'),
     ], validators=[Optional()])
     submit = SubmitField('Add Task')

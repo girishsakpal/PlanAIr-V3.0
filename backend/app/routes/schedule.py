@@ -274,6 +274,127 @@ def week_view():
                            today=today)
 
 
+
+@schedule_bp.route('/schedule/session/<int:session_id>/reschedule', methods=['POST'])
+@login_required
+def reschedule_session(session_id):
+    """
+    Move a session to a new date/time chosen by the user.
+    Validates:
+      - session belongs to current user and is not completed
+      - new time is in the future (for today)
+      - duration is preserved unless user explicitly changes it
+      - no overlap with busy hours blocks
+      - no overlap with other sessions on that day (with break gap)
+    """
+    session = ScheduleSession.query.filter_by(
+        id=session_id,
+        user_id=current_user.id
+    ).first_or_404()
+
+    if session.is_completed:
+        return jsonify({'error': 'Cannot move a completed session.'}), 400
+
+    data = request.get_json() or {}
+    new_date_str  = data.get('date')        # 'YYYY-MM-DD'
+    new_start_str = data.get('start_time')  # 'HH:MM'
+    new_dur_min   = data.get('duration_minutes')  # int, optional
+
+    if not new_date_str or not new_start_str:
+        return jsonify({'error': 'date and start_time are required'}), 400
+
+    try:
+        new_date  = date.fromisoformat(new_date_str)
+        h, m      = map(int, new_start_str.split(':'))
+        from datetime import time as _time
+        new_start = _time(h, m)
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Invalid date or time format'}), 400
+
+    # preserve original duration unless caller provides a new one
+    orig_dur = (
+        session.end_time.hour * 60 + session.end_time.minute -
+        session.start_time.hour * 60 - session.start_time.minute
+    )
+    duration = int(new_dur_min) if new_dur_min else orig_dur
+    duration = max(15, min(duration, 480))  # clamp 15 min – 8 h
+
+    start_min = h * 60 + m
+    end_min   = start_min + duration
+
+    # can't schedule past midnight
+    if end_min > 23 * 60 + 59:
+        return jsonify({'error': 'Session would extend past midnight.'}), 400
+
+    # for today, can't move to a time already passed
+    if new_date == date.today():
+        now = datetime.now()
+        now_min = now.hour * 60 + now.minute
+        if start_min < now_min:
+            return jsonify({'error': "Can't move a session to a time that has already passed."}), 400
+
+    # check busy hours conflict
+    from app.models.schedule import BusyHours as _BH
+    busy = _BH.query.filter_by(
+        user_id=current_user.id,
+        day_of_week=new_date.weekday()
+    ).all()
+    for b in busy:
+        b_start = b.start_time.hour * 60 + b.start_time.minute
+        b_end   = b.end_time.hour * 60 + b.end_time.minute
+        if not (end_min <= b_start or start_min >= b_end):
+            return jsonify({'error': f'This time overlaps a busy block ({b.start_time.strftime("%H:%M")}–{b.end_time.strftime("%H:%M")}).'}), 400
+
+    # check overlap with other sessions on that day (excluding this session itself)
+    from app.scheduler import BREAK_MINUTES
+    others = ScheduleSession.query.filter(
+        ScheduleSession.user_id == current_user.id,
+        ScheduleSession.date    == new_date,
+        ScheduleSession.id      != session_id
+    ).all()
+    for o in others:
+        o_start = o.start_time.hour * 60 + o.start_time.minute
+        o_end   = o.end_time.hour * 60 + o.end_time.minute + BREAK_MINUTES
+        if not (end_min <= o_start or start_min >= o_end):
+            return jsonify({
+                'error': f'Overlaps with "{o.session_label or "another session"}" '
+                         f'({o.start_time.strftime("%H:%M")}–{o.end_time.strftime("%H:%M")}). '
+                         f'A {BREAK_MINUTES}-min gap is required between sessions.'
+            }), 400
+
+    from datetime import time as _time
+    session.date       = new_date
+    session.start_time = new_start
+    session.end_time   = _time(end_min // 60, end_min % 60)
+    db.session.commit()
+
+    return jsonify({
+        'success':    True,
+        'session_id': session.id,
+        'date':       str(session.date),
+        'start_time': session.start_time.strftime('%H:%M'),
+        'end_time':   session.end_time.strftime('%H:%M'),
+        'duration':   duration,
+    })
+
+
+@schedule_bp.route('/schedule/session/<int:session_id>/delete', methods=['POST'])
+@login_required
+def delete_session(session_id):
+    """Remove a single session from the schedule (not the task itself)."""
+    session = ScheduleSession.query.filter_by(
+        id=session_id,
+        user_id=current_user.id
+    ).first_or_404()
+
+    if session.is_completed:
+        return jsonify({'error': 'Cannot delete a completed session.'}), 400
+
+    db.session.delete(session)
+    db.session.commit()
+    return jsonify({'success': True})
+
+
 @schedule_bp.route('/mood', methods=['POST'])
 @login_required
 def log_mood():
