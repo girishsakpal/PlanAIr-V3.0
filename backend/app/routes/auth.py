@@ -69,6 +69,9 @@ def login():
         user = User.query.filter_by(username=form.username.data).first()
 
         if user and user.check_password(form.password.data):
+            from datetime import datetime
+            user.last_login = datetime.utcnow()
+            db.session.commit()
             login_user(user, remember=form.remember.data)
             flash('Welcome back!', 'success')
 

@@ -35,14 +35,18 @@ def create_app(config_class=Config):
     from .routes.tasks import tasks_bp
     from .routes.schedule import schedule_bp
     from .routes.insights import insights_bp
+    from .routes.feedback import feedback_bp
+    from .routes.admin import admin_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(tasks_bp)
     app.register_blueprint(schedule_bp)
     app.register_blueprint(insights_bp)
+    app.register_blueprint(feedback_bp)
+    app.register_blueprint(admin_bp)
 
     with app.app_context():
-        from .models import user, task, schedule, mood
+        from .models import user, task, schedule, mood, feedback
         db.create_all()
 
     app.jinja_env.filters['enumerate'] = enumerate
