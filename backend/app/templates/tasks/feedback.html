@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Feedback — PlanAIr{% endblock %}
+
+{% block content %}
+<div style="max-width:600px; margin:2.5rem auto; padding:0 1rem;">
+
+    <div style="margin-bottom:2rem;">
+        <h2 style="font-size:1.5rem; font-weight:700; margin-bottom:0.4rem;">Share your feedback</h2>
+        <p class="text-muted" style="font-size:0.9rem;">
+            Got a bug, a feature idea, or general thoughts? We read everything.
+        </p>
+    </div>
+
+    <div class="dash-card" style="padding:1.75rem;">
+        <form method="POST" action="{{ url_for('feedback.submit_feedback') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <!-- category -->
+            <div style="margin-bottom:1.25rem;">
+                <label style="display:block; font-size:0.8rem; font-weight:600;
+                               color:var(--text-muted); text-transform:uppercase;
+                               letter-spacing:0.05em; margin-bottom:0.6rem;">
+                    Category
+                </label>
+                <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+                    <label class="category-pill">
+                        <input type="radio" name="category" value="bug" style="display:none">
+                        <span>🐛 Bug report</span>
+                    </label>
+                    <label class="category-pill">
+                        <input type="radio" name="category" value="feature" style="display:none">
+                        <span>💡 Feature request</span>
+                    </label>
+                    <label class="category-pill">
+                        <input type="radio" name="category" value="general" checked style="display:none">
+                        <span>💬 General</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- message -->
+            <div style="margin-bottom:1.5rem;">
+                <label for="message"
+                       style="display:block; font-size:0.8rem; font-weight:600;
+                              color:var(--text-muted); text-transform:uppercase;
+                              letter-spacing:0.05em; margin-bottom:0.6rem;">
+                    Your message
+                </label>
+                <textarea
+                    id="message"
+                    name="message"
+                    rows="6"
+                    maxlength="2000"
+                    placeholder="Tell us what's on your mind…"
+                    style="width:100%; resize:vertical; padding:0.75rem;
+                           background:var(--bg-primary); border:1px solid var(--border);
+                           border-radius:8px; color:var(--text-primary);
+                           font-size:0.9rem; font-family:inherit; outline:none;"
+                    required
+                ></textarea>
+                <div style="text-align:right; font-size:0.75rem; color:var(--text-muted);
+                            margin-top:0.3rem;" id="char-count">0 / 2000</div>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:1rem;">
+                <button type="submit" class="btn btn-primary">
+                    &#10003; Submit feedback
+                </button>
+                <a href="{{ url_for('tasks.dashboard') }}" class="btn btn-outline">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .category-pill span {
+        display: inline-block;
+        padding: 0.4rem 0.9rem;
+        border-radius: 99px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        border: 1px solid var(--border);
+        background: var(--bg-secondary);
+        color: var(--text-secondary);
+        transition: all 0.15s;
+        user-select: none;
+    }
+
+    .category-pill input:checked + span {
+        background: var(--accent, #7c3aed);
+        border-color: var(--accent, #7c3aed);
+        color: #fff;
+    }
+
+    .category-pill span:hover {
+        border-color: var(--accent, #7c3aed);
+        color: var(--accent, #7c3aed);
+    }
+</style>
+
+{% block extra_js %}
+<script>
+    const ta = document.getElementById('message');
+    const counter = document.getElementById('char-count');
+    ta.addEventListener('input', () => {
+        counter.textContent = ta.value.length + ' / 2000';
+    });
+</script>
+{% endblock %}
+{% endblock %}

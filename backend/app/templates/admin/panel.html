@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Founder Panel — PlanAIr</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0f1117;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        /* ── top bar ── */
+        .topbar {
+            background: #1a1d27;
+            border-bottom: 1px solid #2d3148;
+            padding: 0 2rem;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .topbar-badge {
+            background: #7c3aed22;
+            border: 1px solid #7c3aed55;
+            color: #a78bfa;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 0.2rem 0.6rem;
+            border-radius: 99px;
+        }
+
+        .topbar-title {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+
+        .logout-link {
+            color: #f87171;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .logout-link:hover { text-decoration: underline; }
+
+        /* ── layout ── */
+        .page { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+        /* ── stat cards ── */
+        .stat-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .stat-card {
+            background: #1a1d27;
+            border: 1px solid #2d3148;
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+        }
+
+        .stat-num {
+            font-size: 2rem;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 0.3rem;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        .stat-num--purple { color: #a78bfa; }
+        .stat-num--blue   { color: #60a5fa; }
+        .stat-num--amber  { color: #fbbf24; }
+
+        /* ── section ── */
+        .section { margin-bottom: 3rem; }
+
+        .section-heading {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .badge-count {
+            background: #7c3aed;
+            color: #fff;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 0.15rem 0.5rem;
+            border-radius: 99px;
+        }
+
+        /* ── table ── */
+        .table-wrap {
+            background: #1a1d27;
+            border: 1px solid #2d3148;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        thead th {
+            background: #12141e;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid #2d3148;
+        }
+
+        tbody tr { border-bottom: 1px solid #1e2135; }
+        tbody tr:last-child { border-bottom: none; }
+        tbody tr:hover { background: #1e2135; }
+
+        td { padding: 0.75rem 1rem; vertical-align: middle; }
+
+        .avatar {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #7c3aed33;
+            color: #a78bfa;
+            font-weight: 700;
+            font-size: 0.8rem;
+            margin-right: 0.5rem;
+        }
+
+        .user-name { font-weight: 600; }
+        .user-username { color: #64748b; font-size: 0.8rem; }
+
+        .time-cell { color: #94a3b8; font-size: 0.82rem; }
+        .never-cell { color: #4b5563; font-style: italic; font-size: 0.82rem; }
+
+        /* ── feedback cards ── */
+        .fb-list { display: flex; flex-direction: column; gap: 0.75rem; }
+
+        .fb-card {
+            background: #1a1d27;
+            border: 1px solid #2d3148;
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 0.5rem;
+        }
+
+        .fb-card.unread { border-left: 3px solid #7c3aed; }
+
+        .fb-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .fb-author { font-weight: 600; font-size: 0.9rem; }
+
+        .fb-category {
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            padding: 0.15rem 0.55rem;
+            border-radius: 99px;
+        }
+
+        .cat-bug     { background: #7f1d1d33; color: #f87171; border: 1px solid #f8717133; }
+        .cat-feature { background: #1e3a5f33; color: #60a5fa; border: 1px solid #60a5fa33; }
+        .cat-general { background: #1a2e1a33; color: #86efac; border: 1px solid #86efac33; }
+
+        .fb-time { font-size: 0.78rem; color: #64748b; }
+
+        .fb-message {
+            font-size: 0.875rem;
+            color: #cbd5e1;
+            line-height: 1.6;
+            grid-column: 1 / -1;
+            word-break: break-word;
+        }
+
+        .fb-actions {
+            display: flex;
+            gap: 0.5rem;
+            grid-column: 2;
+            grid-row: 1;
+            align-self: start;
+        }
+
+        .btn-sm {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.3rem 0.65rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-read   { background: #7c3aed22; color: #a78bfa; border: 1px solid #7c3aed44; }
+        .btn-delete { background: #7f1d1d22; color: #f87171; border: 1px solid #f8717133; }
+        .btn-read:hover   { background: #7c3aed44; }
+        .btn-delete:hover { background: #7f1d1d55; }
+
+        .empty-state {
+            padding: 2.5rem;
+            text-align: center;
+            color: #4b5563;
+            font-size: 0.875rem;
+        }
+
+        /* ── nav tabs ── */
+        .tabs {
+            display: flex;
+            gap: 0.25rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #2d3148;
+        }
+
+        .tab {
+            padding: 0.6rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #64748b;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            text-decoration: none;
+        }
+
+        .tab.active { color: #a78bfa; border-bottom-color: #7c3aed; }
+        .tab:hover:not(.active) { color: #e2e8f0; }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <div class="topbar-left">
+        <span class="topbar-badge">&#128274; Admin</span>
+        <span class="topbar-title">PlanAIr Founder Panel</span>
+    </div>
+    <div class="topbar-right">
+        <span>Logged in as admin</span>
+        <a href="{{ url_for('admin.logout') }}" class="logout-link">Sign out</a>
+    </div>
+</div>
+
+<div class="page">
+
+    <!-- stat cards -->
+    <div class="stat-row">
+        <div class="stat-card">
+            <div class="stat-num stat-num--purple">{{ users | length }}</div>
+            <div class="stat-label">Total users</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num stat-num--blue">{{ feedbacks | length }}</div>
+            <div class="stat-label">Feedback submissions</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-num stat-num--amber">{{ unread_count }}</div>
+            <div class="stat-label">Unread feedback</div>
+        </div>
+    </div>
+
+    <!-- tabs -->
+    <div class="tabs">
+        <a class="tab active" href="#users">Users</a>
+        <a class="tab" href="#feedback">
+            Feedback
+            {% if unread_count > 0 %}<span class="badge-count">{{ unread_count }}</span>{% endif %}
+        </a>
+    </div>
+
+    <!-- users section -->
+    <div class="section" id="users">
+        <div class="section-heading">&#128101; All users</div>
+        <div class="table-wrap">
+            {% if users %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Name</th>
+                        <th>Username</th>
+                        <th>Joined</th>
+                        <th>Last login</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td style="color:#4b5563">{{ loop.index }}</td>
+                        <td>
+                            <span class="avatar">{{ u.name[0].upper() }}</span>
+                            <span class="user-name">{{ u.name }}</span>
+                        </td>
+                        <td><span class="user-username">@{{ u.username }}</span></td>
+                        <td class="time-cell">{{ u.created_at.strftime('%d %b %Y') }}</td>
+                        <td>
+                            {% if u.last_login %}
+                            <span class="time-cell">{{ u.last_login.strftime('%d %b %Y, %H:%M') }}</span>
+                            {% else %}
+                            <span class="never-cell">Never logged in</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">No users yet.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- feedback section -->
+    <div class="section" id="feedback">
+        <div class="section-heading">
+            &#128172; Feedback
+            {% if unread_count > 0 %}
+            <span class="badge-count">{{ unread_count }} new</span>
+            {% endif %}
+        </div>
+
+        {% if feedbacks %}
+        <div class="fb-list">
+            {% for fb in feedbacks %}
+            <div class="fb-card {% if not fb.is_read %}unread{% endif %}">
+                <div style="grid-column:1">
+                    <div class="fb-meta">
+                        <span class="fb-author">{{ fb.user.name }}</span>
+                        <span class="user-username">@{{ fb.user.username }}</span>
+                        <span class="fb-category cat-{{ fb.category }}">{{ fb.category }}</span>
+                        <span class="fb-time">{{ fb.created_at.strftime('%d %b %Y, %H:%M') }}</span>
+                        {% if not fb.is_read %}<span style="font-size:0.7rem;color:#a78bfa;font-weight:700">● NEW</span>{% endif %}
+                    </div>
+                </div>
+
+                <div class="fb-actions">
+                    {% if not fb.is_read %}
+                    <form method="POST" action="{{ url_for('admin.mark_read', feedback_id=fb.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn-sm btn-read">Mark read</button>
+                    </form>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('admin.delete_feedback', feedback_id=fb.id) }}"
+                          onsubmit="return confirm('Delete this feedback?')">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn-sm btn-delete">Delete</button>
+                    </form>
+                </div>
+
+                <div class="fb-message">{{ fb.message }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="table-wrap">
+            <div class="empty-state">No feedback submitted yet.</div>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+    // Smooth tab scrolling
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', e => {
+            e.preventDefault();
+            const target = document.querySelector(tab.getAttribute('href'));
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+        });
+    });
+</script>
+
+</body>
+</html>
