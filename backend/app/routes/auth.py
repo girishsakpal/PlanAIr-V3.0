@@ -81,7 +81,7 @@ def login():
             if not user.busy_hours_set:
                 return redirect(url_for('schedule.busy_hours_setup'))
 
-            return redirect(next_page or url_for('tasks.dashboard'))
+            return redirect(next_page or url_for('tasks.home'))
 
         flash('Incorrect username or password.', 'danger')
 

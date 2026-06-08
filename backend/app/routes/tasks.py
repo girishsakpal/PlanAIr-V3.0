@@ -14,6 +14,22 @@ from app.models.schedule import ScheduleSession
 tasks_bp = Blueprint('tasks', __name__)
 
 
+@tasks_bp.route('/home')
+@login_required
+def home():
+    from app.models.user import User
+    from app.models.schedule import ScheduleSession as SS
+    total_users = User.query.count()
+    total_tasks = Task.query.count()
+    total_sessions = SS.query.filter_by(is_done=True).count()
+    streak = get_streak(current_user.id)
+    return render_template('tasks/home.html',
+                           total_users=total_users,
+                           total_tasks=total_tasks,
+                           total_sessions=total_sessions,
+                           streak=streak)
+
+
 @tasks_bp.route('/dashboard')
 @login_required
 def dashboard():
