@@ -163,6 +163,15 @@ a:hover {
 .nav-links {
     display: flex;
     gap: 0.2rem;
+    align-items: center;
+}
+
+.nav-divider {
+    width: 1px;
+    height: 18px;
+    background: var(--border);
+    margin: 0 0.1rem;
+    flex-shrink: 0;
 }
 
 .nav-links a {

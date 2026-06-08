@@ -21,7 +21,7 @@ def home():
     from app.models.schedule import ScheduleSession as SS
     total_users = User.query.count()
     total_tasks = Task.query.count()
-    total_sessions = SS.query.filter_by(is_done=True).count()
+    total_sessions = SS.query.filter_by(is_completed=True).count()
     streak = get_streak(current_user.id)
     return render_template('tasks/home.html',
                            total_users=total_users,
