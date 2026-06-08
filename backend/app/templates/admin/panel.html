@@ -4,134 +4,272 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Founder Panel — PlanAIr</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        /* ── admin-specific overrides ── */
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #0f1117;
-            color: #e2e8f0;
-            min-height: 100vh;
+        body::before {
+            background-image: radial-gradient(rgba(129, 140, 248, 0.07) 1px, transparent 1px);
+            background-size: 28px 28px;
         }
 
-        /* ── top bar ── */
-        .topbar {
-            background: #1a1d27;
-            border-bottom: 1px solid #2d3148;
-            padding: 0 2rem;
-            height: 56px;
+        /* topbar */
+        .admin-topbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
+            padding: 0 2.5rem;
+            height: 64px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
             position: sticky;
             top: 0;
-            z-index: 10;
+            z-index: 100;
+            box-shadow: var(--shadow-sm);
         }
 
-        .topbar-left {
+        .admin-topbar::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(129,140,248,0.5) 30%, rgba(129,140,248,0.7) 50%, rgba(129,140,248,0.5) 70%, transparent 100%);
+        }
+
+        .topbar-brand {
             display: flex;
             align-items: center;
             gap: 0.75rem;
         }
 
-        .topbar-badge {
-            background: #7c3aed22;
-            border: 1px solid #7c3aed55;
-            color: #a78bfa;
-            font-size: 0.7rem;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            padding: 0.2rem 0.6rem;
-            border-radius: 99px;
+        .topbar-logo {
+            font-size: 1.25rem;
+            font-weight: 800;
+            background: var(--grad-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
         }
 
-        .topbar-title {
-            font-size: 1rem;
+        .admin-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: linear-gradient(135deg, rgba(129,140,248,0.15), rgba(139,92,246,0.1));
+            border: 1px solid rgba(129,140,248,0.3);
+            color: #a78bfa;
+            font-size: 0.68rem;
             font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 0.22rem 0.65rem;
+            border-radius: 99px;
+            box-shadow: 0 0 12px rgba(129,140,248,0.15);
         }
 
         .topbar-right {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            font-size: 0.85rem;
-            color: #94a3b8;
+            gap: 1.25rem;
         }
 
-        .logout-link {
-            color: #f87171;
-            text-decoration: none;
+        .topbar-time {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .logout-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.38rem 0.9rem;
+            border-radius: 8px;
+            font-size: 0.82rem;
             font-weight: 600;
+            color: #f87171;
+            background: rgba(239,68,68,0.08);
+            border: 1px solid rgba(239,68,68,0.2);
+            text-decoration: none;
+            transition: all 0.2s;
         }
 
-        .logout-link:hover { text-decoration: underline; }
+        .logout-btn:hover {
+            background: rgba(239,68,68,0.15);
+            border-color: rgba(239,68,68,0.4);
+            box-shadow: 0 0 16px rgba(239,68,68,0.2);
+            text-decoration: none;
+            color: #f87171;
+        }
 
-        /* ── layout ── */
-        .page { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+        /* page */
+        .admin-page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 2.5rem;
+            position: relative;
+            z-index: 1;
+        }
 
-        /* ── stat cards ── */
-        .stat-row {
+        /* page header */
+        .admin-page-header {
+            margin-bottom: 2rem;
+        }
+
+        .admin-page-header h1 {
+            font-size: 1.75rem;
+            font-weight: 800;
+            margin-bottom: 0.3rem;
+            background: var(--grad-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .admin-page-header p {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+        }
+
+        /* stat cards */
+        .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            grid-template-columns: repeat(3, 1fr);
             gap: 1rem;
             margin-bottom: 2.5rem;
         }
 
-        .stat-card {
-            background: #1a1d27;
-            border: 1px solid #2d3148;
-            border-radius: 12px;
-            padding: 1.25rem 1.5rem;
+        .admin-stat {
+            background: var(--grad-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: 1.4rem 1.6rem;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.25s;
         }
 
-        .stat-num {
-            font-size: 2rem;
+        .admin-stat::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: var(--stat-color, var(--grad-primary));
+            opacity: 0.8;
+        }
+
+        .admin-stat:hover {
+            box-shadow: var(--shadow), 0 0 24px rgba(var(--primary-rgb), 0.1);
+            transform: translateY(-3px);
+            border-color: rgba(var(--primary-rgb), 0.3);
+        }
+
+        .admin-stat-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+
+        .admin-stat-num {
+            font-size: 2.4rem;
             font-weight: 800;
             line-height: 1;
+            color: var(--stat-text, var(--primary));
             margin-bottom: 0.3rem;
+            display: block;
         }
 
-        .stat-label {
-            font-size: 0.8rem;
-            color: #94a3b8;
+        .admin-stat-label {
+            font-size: 0.78rem;
+            color: var(--text-muted);
             font-weight: 500;
-        }
-
-        .stat-num--purple { color: #a78bfa; }
-        .stat-num--blue   { color: #60a5fa; }
-        .stat-num--amber  { color: #fbbf24; }
-
-        /* ── section ── */
-        .section { margin-bottom: 3rem; }
-
-        .section-heading {
-            font-size: 1rem;
-            font-weight: 700;
-            color: #94a3b8;
             text-transform: uppercase;
             letter-spacing: 0.06em;
-            margin-bottom: 1rem;
+        }
+
+        .admin-stat-sub {
+            font-size: 0.75rem;
+            color: var(--text-subtle);
+            margin-top: 0.5rem;
+        }
+
+        /* glow blob in stat card */
+        .admin-stat-glow {
+            position: absolute;
+            bottom: -20px;
+            right: -20px;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--stat-glow, rgba(129,140,248,0.12));
+            filter: blur(20px);
+            pointer-events: none;
+        }
+
+        .stat--users    { --stat-color: linear-gradient(90deg,#818cf8,#6366f1); --stat-text:#818cf8; --stat-glow:rgba(129,140,248,0.15); }
+        .stat--feedback { --stat-color: linear-gradient(90deg,#34d399,#10b981); --stat-text:#34d399; --stat-glow:rgba(52,211,153,0.12); }
+        .stat--unread   { --stat-color: linear-gradient(90deg,#f59e0b,#d97706); --stat-text:#fbbf24; --stat-glow:rgba(245,158,11,0.12); }
+
+        /* section */
+        .admin-section { margin-bottom: 3rem; }
+
+        .section-head {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
         }
 
-        .badge-count {
-            background: #7c3aed;
-            color: #fff;
-            font-size: 0.7rem;
+        .section-title {
+            font-size: 0.82rem;
             font-weight: 700;
-            padding: 0.15rem 0.5rem;
-            border-radius: 99px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            position: relative;
+            padding-left: 0.9rem;
         }
 
-        /* ── table ── */
-        .table-wrap {
-            background: #1a1d27;
-            border: 1px solid #2d3148;
-            border-radius: 12px;
+        .section-title::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 10%; bottom: 10%;
+            width: 3px;
+            background: var(--grad-primary);
+            border-radius: 2px;
+            box-shadow: 0 0 8px rgba(var(--primary-rgb),0.5);
+        }
+
+        .section-count {
+            background: var(--grad-primary);
+            color: #fff;
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 0.15rem 0.55rem;
+            border-radius: 99px;
+            box-shadow: 0 2px 8px rgba(var(--primary-rgb),0.4);
+        }
+
+        /* users table */
+        .admin-table-wrap {
+            background: var(--grad-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
             overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+        }
+
+        .admin-table-wrap::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 20%; right: 20%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(var(--primary-rgb),0.4), transparent);
         }
 
         table {
@@ -141,287 +279,497 @@
         }
 
         thead th {
-            background: #12141e;
-            padding: 0.75rem 1rem;
+            background: var(--bg-secondary);
+            padding: 0.85rem 1.25rem;
             text-align: left;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #64748b;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
-            border-bottom: 1px solid #2d3148;
+            letter-spacing: 0.07em;
+            border-bottom: 1px solid var(--border);
         }
 
-        tbody tr { border-bottom: 1px solid #1e2135; }
+        tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background 0.15s;
+        }
+
         tbody tr:last-child { border-bottom: none; }
-        tbody tr:hover { background: #1e2135; }
 
-        td { padding: 0.75rem 1rem; vertical-align: middle; }
+        tbody tr:hover { background: rgba(var(--primary-rgb), 0.04); }
 
-        .avatar {
-            display: inline-flex;
+        td { padding: 0.85rem 1.25rem; vertical-align: middle; }
+
+        .row-num { color: var(--text-subtle); font-size: 0.78rem; font-weight: 600; }
+
+        .user-cell {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: var(--grad-primary);
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.82rem;
+            display: flex;
             align-items: center;
             justify-content: center;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background: #7c3aed33;
-            color: #a78bfa;
-            font-weight: 700;
-            font-size: 0.8rem;
-            margin-right: 0.5rem;
+            flex-shrink: 0;
+            box-shadow: 0 0 10px rgba(var(--primary-rgb),0.3);
         }
 
-        .user-name { font-weight: 600; }
-        .user-username { color: #64748b; font-size: 0.8rem; }
+        .user-name-text { font-weight: 600; font-size: 0.9rem; }
 
-        .time-cell { color: #94a3b8; font-size: 0.82rem; }
-        .never-cell { color: #4b5563; font-style: italic; font-size: 0.82rem; }
+        .user-handle {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-top: 0.1rem;
+        }
 
-        /* ── feedback cards ── */
-        .fb-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .time-text { font-size: 0.82rem; color: var(--text-muted); }
+        .never-text { font-size: 0.8rem; color: var(--text-subtle); font-style: italic; }
+
+        .online-dot {
+            display: inline-block;
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 6px rgba(16,185,129,0.8);
+            margin-right: 5px;
+        }
+
+        /* feedback cards */
+        .fb-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
 
         .fb-card {
-            background: #1a1d27;
-            border: 1px solid #2d3148;
-            border-radius: 12px;
-            padding: 1rem 1.25rem;
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 0.5rem;
+            background: var(--grad-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            padding: 1.25rem 1.4rem;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.25s;
+            position: relative;
+            overflow: hidden;
         }
 
-        .fb-card.unread { border-left: 3px solid #7c3aed; }
+        .fb-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 25%; right: 25%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(var(--primary-rgb),0.3), transparent);
+        }
+
+        .fb-card:hover {
+            box-shadow: var(--shadow), 0 0 20px rgba(var(--primary-rgb),0.06);
+            border-color: rgba(var(--primary-rgb),0.2);
+        }
+
+        .fb-card.unread {
+            border-left: 3px solid var(--primary);
+            box-shadow: var(--shadow-sm), 0 0 20px rgba(var(--primary-rgb),0.12);
+        }
+
+        .fb-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 0.85rem;
+            flex-wrap: wrap;
+        }
 
         .fb-meta {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
-            margin-bottom: 0.5rem;
+            gap: 0.65rem;
+            flex-wrap: wrap;
         }
 
-        .fb-author { font-weight: 600; font-size: 0.9rem; }
+        .fb-author { font-weight: 700; font-size: 0.9rem; }
+        .fb-handle { font-size: 0.78rem; color: var(--text-muted); }
 
-        .fb-category {
-            font-size: 0.7rem;
+        .fb-cat {
+            font-size: 0.68rem;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.06em;
-            padding: 0.15rem 0.55rem;
+            letter-spacing: 0.07em;
+            padding: 0.2rem 0.6rem;
             border-radius: 99px;
         }
 
-        .cat-bug     { background: #7f1d1d33; color: #f87171; border: 1px solid #f8717133; }
-        .cat-feature { background: #1e3a5f33; color: #60a5fa; border: 1px solid #60a5fa33; }
-        .cat-general { background: #1a2e1a33; color: #86efac; border: 1px solid #86efac33; }
+        .cat-bug     { background:rgba(239,68,68,0.12); color:#f87171; border:1px solid rgba(239,68,68,0.25); box-shadow:0 0 8px rgba(239,68,68,0.1); }
+        .cat-feature { background:rgba(59,130,246,0.12); color:#60a5fa; border:1px solid rgba(59,130,246,0.25); box-shadow:0 0 8px rgba(59,130,246,0.1); }
+        .cat-general { background:rgba(16,185,129,0.12); color:#34d399; border:1px solid rgba(16,185,129,0.25); box-shadow:0 0 8px rgba(16,185,129,0.1); }
 
-        .fb-time { font-size: 0.78rem; color: #64748b; }
-
-        .fb-message {
-            font-size: 0.875rem;
-            color: #cbd5e1;
-            line-height: 1.6;
-            grid-column: 1 / -1;
-            word-break: break-word;
+        .new-pill {
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--primary);
+            background: var(--primary-light);
+            border: 1px solid rgba(var(--primary-rgb),0.3);
+            padding: 0.15rem 0.5rem;
+            border-radius: 99px;
+            box-shadow: 0 0 10px rgba(var(--primary-rgb),0.2);
         }
+
+        .fb-time { font-size: 0.78rem; color: var(--text-muted); }
 
         .fb-actions {
             display: flex;
             gap: 0.5rem;
-            grid-column: 2;
-            grid-row: 1;
-            align-self: start;
+            flex-shrink: 0;
         }
 
-        .btn-sm {
-            font-size: 0.75rem;
-            font-weight: 600;
-            padding: 0.3rem 0.65rem;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .btn-read   { background: #7c3aed22; color: #a78bfa; border: 1px solid #7c3aed44; }
-        .btn-delete { background: #7f1d1d22; color: #f87171; border: 1px solid #f8717133; }
-        .btn-read:hover   { background: #7c3aed44; }
-        .btn-delete:hover { background: #7f1d1d55; }
-
-        .empty-state {
-            padding: 2.5rem;
-            text-align: center;
-            color: #4b5563;
+        .fb-message {
             font-size: 0.875rem;
+            color: var(--text-muted);
+            line-height: 1.65;
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            padding: 0.85rem 1rem;
+            border: 1px solid var(--border);
+            word-break: break-word;
         }
 
-        /* ── nav tabs ── */
-        .tabs {
+        /* action buttons */
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.76rem;
+            font-weight: 600;
+            padding: 0.32rem 0.75rem;
+            border-radius: 8px;
+            border: 1px solid;
+            cursor: pointer;
+            transition: all 0.18s;
+            text-decoration: none;
+            background: none;
+        }
+
+        .action-btn-read {
+            color: var(--primary);
+            border-color: rgba(var(--primary-rgb),0.3);
+            background: rgba(var(--primary-rgb),0.08);
+        }
+
+        .action-btn-read:hover {
+            background: rgba(var(--primary-rgb),0.18);
+            border-color: var(--primary);
+            box-shadow: 0 0 12px rgba(var(--primary-rgb),0.2);
+        }
+
+        .action-btn-del {
+            color: #f87171;
+            border-color: rgba(239,68,68,0.25);
+            background: rgba(239,68,68,0.08);
+        }
+
+        .action-btn-del:hover {
+            background: rgba(239,68,68,0.18);
+            border-color: rgba(239,68,68,0.5);
+            box-shadow: 0 0 12px rgba(239,68,68,0.2);
+        }
+
+        /* tab bar */
+        .admin-tabs {
             display: flex;
             gap: 0.25rem;
             margin-bottom: 2rem;
-            border-bottom: 1px solid #2d3148;
+            border-bottom: 1px solid var(--border);
         }
 
-        .tab {
-            padding: 0.6rem 1rem;
+        .admin-tab {
+            padding: 0.65rem 1.1rem;
             font-size: 0.875rem;
             font-weight: 600;
-            color: #64748b;
+            color: var(--text-muted);
             cursor: pointer;
             border-bottom: 2px solid transparent;
             margin-bottom: -1px;
             text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: color 0.15s;
         }
 
-        .tab.active { color: #a78bfa; border-bottom-color: #7c3aed; }
-        .tab:hover:not(.active) { color: #e2e8f0; }
+        .admin-tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .admin-tab:hover:not(.active) {
+            color: var(--text);
+            text-decoration: none;
+        }
+
+        /* empty state */
+        .admin-empty {
+            padding: 3.5rem;
+            text-align: center;
+            color: var(--text-subtle);
+            font-size: 0.875rem;
+        }
+
+        .admin-empty span { font-size: 2rem; display: block; margin-bottom: 0.5rem; }
+
+        @media (max-width: 768px) {
+            .admin-page { padding: 1.25rem 1rem; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .admin-topbar { padding: 0 1rem; }
+        }
     </style>
 </head>
 <body>
 
-<div class="topbar">
-    <div class="topbar-left">
-        <span class="topbar-badge">&#128274; Admin</span>
-        <span class="topbar-title">PlanAIr Founder Panel</span>
+<!-- topbar -->
+<div class="admin-topbar">
+    <div class="topbar-brand">
+        <span class="topbar-logo">PlanAIr</span>
+        <span class="admin-badge">⚡ Founder Panel</span>
     </div>
     <div class="topbar-right">
-        <span>Logged in as admin</span>
-        <a href="{{ url_for('admin.logout') }}" class="logout-link">Sign out</a>
+        <span class="topbar-time" id="live-clock"></span>
+        <a href="{{ url_for('admin.logout') }}" class="logout-btn">
+            <span>↩</span> Sign out
+        </a>
     </div>
 </div>
 
-<div class="page">
+<div class="admin-page">
+
+    <!-- page header -->
+    <div class="admin-page-header">
+        <h1>Dashboard</h1>
+        <p>Your app at a glance — users, feedback, and activity.</p>
+    </div>
 
     <!-- stat cards -->
-    <div class="stat-row">
-        <div class="stat-card">
-            <div class="stat-num stat-num--purple">{{ users | length }}</div>
-            <div class="stat-label">Total users</div>
+    <div class="stats-grid">
+        <div class="admin-stat stat--users">
+            <span class="admin-stat-icon">👥</span>
+            <span class="admin-stat-num">{{ users | length }}</span>
+            <span class="admin-stat-label">Total Users</span>
+            {% if users %}
+            <div class="admin-stat-sub">Latest: {{ users[0].name }}</div>
+            {% endif %}
+            <div class="admin-stat-glow"></div>
         </div>
-        <div class="stat-card">
-            <div class="stat-num stat-num--blue">{{ feedbacks | length }}</div>
-            <div class="stat-label">Feedback submissions</div>
+
+        <div class="admin-stat stat--feedback">
+            <span class="admin-stat-icon">💬</span>
+            <span class="admin-stat-num">{{ feedbacks | length }}</span>
+            <span class="admin-stat-label">Feedback Submissions</span>
+            <div class="admin-stat-sub">
+                {{ feedbacks | selectattr('category', 'equalto', 'bug') | list | length }} bugs ·
+                {{ feedbacks | selectattr('category', 'equalto', 'feature') | list | length }} features ·
+                {{ feedbacks | selectattr('category', 'equalto', 'general') | list | length }} general
+            </div>
+            <div class="admin-stat-glow"></div>
         </div>
-        <div class="stat-card">
-            <div class="stat-num stat-num--amber">{{ unread_count }}</div>
-            <div class="stat-label">Unread feedback</div>
+
+        <div class="admin-stat stat--unread">
+            <span class="admin-stat-icon">🔔</span>
+            <span class="admin-stat-num">{{ unread_count }}</span>
+            <span class="admin-stat-label">Unread Feedback</span>
+            <div class="admin-stat-sub">
+                {% if unread_count == 0 %}All caught up ✓{% else %}Needs your attention{% endif %}
+            </div>
+            <div class="admin-stat-glow"></div>
         </div>
     </div>
 
     <!-- tabs -->
-    <div class="tabs">
-        <a class="tab active" href="#users">Users</a>
-        <a class="tab" href="#feedback">
-            Feedback
-            {% if unread_count > 0 %}<span class="badge-count">{{ unread_count }}</span>{% endif %}
+    <div class="admin-tabs">
+        <a class="admin-tab active" href="#users" data-tab="users">
+            👥 Users
+            <span class="section-count">{{ users | length }}</span>
+        </a>
+        <a class="admin-tab" href="#feedback" data-tab="feedback">
+            💬 Feedback
+            {% if unread_count > 0 %}
+            <span class="section-count">{{ unread_count }} new</span>
+            {% else %}
+            <span class="section-count">{{ feedbacks | length }}</span>
+            {% endif %}
         </a>
     </div>
 
     <!-- users section -->
-    <div class="section" id="users">
-        <div class="section-heading">&#128101; All users</div>
-        <div class="table-wrap">
+    <div class="admin-section" id="users">
+        <div class="section-head">
+            <div class="section-title">
+                All Users
+                <span class="section-count">{{ users | length }}</span>
+            </div>
+        </div>
+
+        <div class="admin-table-wrap">
             {% if users %}
             <table>
                 <thead>
                     <tr>
-                        <th>#</th>
-                        <th>Name</th>
-                        <th>Username</th>
+                        <th style="width:40px">#</th>
+                        <th>User</th>
                         <th>Joined</th>
-                        <th>Last login</th>
+                        <th>Last Login</th>
+                        <th>Days Active</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for u in users %}
                     <tr>
-                        <td style="color:#4b5563">{{ loop.index }}</td>
+                        <td><span class="row-num">{{ loop.index }}</span></td>
                         <td>
-                            <span class="avatar">{{ u.name[0].upper() }}</span>
-                            <span class="user-name">{{ u.name }}</span>
+                            <div class="user-cell">
+                                <div class="user-avatar">{{ u.name[0].upper() }}</div>
+                                <div>
+                                    <div class="user-name-text">{{ u.name }}</div>
+                                    <div class="user-handle">@{{ u.username }}</div>
+                                </div>
+                            </div>
                         </td>
-                        <td><span class="user-username">@{{ u.username }}</span></td>
-                        <td class="time-cell">{{ u.created_at.strftime('%d %b %Y') }}</td>
+                        <td><span class="time-text">{{ u.created_at.strftime('%d %b %Y') }}</span></td>
                         <td>
                             {% if u.last_login %}
-                            <span class="time-cell">{{ u.last_login.strftime('%d %b %Y, %H:%M') }}</span>
+                                {% set diff = (u.last_login - u.created_at).days %}
+                                {% set now_diff = (namespace(val=0)) %}
+                                <span class="time-text">
+                                    {{ u.last_login.strftime('%d %b %Y') }}
+                                    <span style="color:var(--text-subtle); font-size:0.75rem;">
+                                        · {{ u.last_login.strftime('%H:%M') }}
+                                    </span>
+                                </span>
                             {% else %}
-                            <span class="never-cell">Never logged in</span>
+                                <span class="never-text">Never logged in</span>
                             {% endif %}
+                        </td>
+                        <td>
+                            <span style="font-size:0.85rem; font-weight:600; color:var(--primary);">
+                                {{ u.days_active if u.days_active is defined else (u.created_at | string)[:10] and '—' }}
+                            </span>
                         </td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
             {% else %}
-            <div class="empty-state">No users yet.</div>
+            <div class="admin-empty">
+                <span>👤</span>
+                No users yet
+            </div>
             {% endif %}
         </div>
     </div>
 
     <!-- feedback section -->
-    <div class="section" id="feedback">
-        <div class="section-heading">
-            &#128172; Feedback
-            {% if unread_count > 0 %}
-            <span class="badge-count">{{ unread_count }} new</span>
+    <div class="admin-section" id="feedback" style="display:none">
+        <div class="section-head">
+            <div class="section-title">
+                All Feedback
+                {% if unread_count > 0 %}
+                <span class="section-count">{{ unread_count }} new</span>
+                {% endif %}
+            </div>
+            {% if feedbacks %}
+            <div style="display:flex; gap:0.5rem; font-size:0.78rem; color:var(--text-muted);">
+                <span style="background:rgba(239,68,68,0.12); color:#f87171; padding:0.2rem 0.6rem; border-radius:99px;">
+                    🐛 {{ feedbacks | selectattr('category','equalto','bug') | list | length }}
+                </span>
+                <span style="background:rgba(59,130,246,0.12); color:#60a5fa; padding:0.2rem 0.6rem; border-radius:99px;">
+                    💡 {{ feedbacks | selectattr('category','equalto','feature') | list | length }}
+                </span>
+                <span style="background:rgba(16,185,129,0.12); color:#34d399; padding:0.2rem 0.6rem; border-radius:99px;">
+                    💬 {{ feedbacks | selectattr('category','equalto','general') | list | length }}
+                </span>
+            </div>
             {% endif %}
         </div>
 
         {% if feedbacks %}
-        <div class="fb-list">
+        <div class="fb-grid">
             {% for fb in feedbacks %}
             <div class="fb-card {% if not fb.is_read %}unread{% endif %}">
-                <div style="grid-column:1">
+                <div class="fb-header">
                     <div class="fb-meta">
+                        <div class="user-avatar" style="width:30px;height:30px;font-size:0.75rem;">{{ fb.user.name[0].upper() }}</div>
                         <span class="fb-author">{{ fb.user.name }}</span>
-                        <span class="user-username">@{{ fb.user.username }}</span>
-                        <span class="fb-category cat-{{ fb.category }}">{{ fb.category }}</span>
-                        <span class="fb-time">{{ fb.created_at.strftime('%d %b %Y, %H:%M') }}</span>
-                        {% if not fb.is_read %}<span style="font-size:0.7rem;color:#a78bfa;font-weight:700">● NEW</span>{% endif %}
+                        <span class="fb-handle">@{{ fb.user.username }}</span>
+                        <span class="fb-cat cat-{{ fb.category }}">
+                            {% if fb.category == 'bug' %}🐛{% elif fb.category == 'feature' %}💡{% else %}💬{% endif %}
+                            {{ fb.category }}
+                        </span>
+                        {% if not fb.is_read %}<span class="new-pill">New</span>{% endif %}
+                        <span class="fb-time">{{ fb.created_at.strftime('%d %b %Y · %H:%M') }}</span>
+                    </div>
+                    <div class="fb-actions">
+                        {% if not fb.is_read %}
+                        <form method="POST" action="{{ url_for('admin.mark_read', feedback_id=fb.id) }}" style="display:inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="action-btn action-btn-read">✓ Mark read</button>
+                        </form>
+                        {% endif %}
+                        <form method="POST" action="{{ url_for('admin.delete_feedback', feedback_id=fb.id) }}"
+                              style="display:inline" onsubmit="return confirm('Delete this feedback?')">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="action-btn action-btn-del">🗑 Delete</button>
+                        </form>
                     </div>
                 </div>
-
-                <div class="fb-actions">
-                    {% if not fb.is_read %}
-                    <form method="POST" action="{{ url_for('admin.mark_read', feedback_id=fb.id) }}">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn-sm btn-read">Mark read</button>
-                    </form>
-                    {% endif %}
-                    <form method="POST" action="{{ url_for('admin.delete_feedback', feedback_id=fb.id) }}"
-                          onsubmit="return confirm('Delete this feedback?')">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn-sm btn-delete">Delete</button>
-                    </form>
-                </div>
-
                 <div class="fb-message">{{ fb.message }}</div>
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <div class="table-wrap">
-            <div class="empty-state">No feedback submitted yet.</div>
+        <div class="admin-table-wrap">
+            <div class="admin-empty">
+                <span>💬</span>
+                No feedback yet — share the feedback link with your users!
+            </div>
         </div>
         {% endif %}
     </div>
 
-</div>
+</div><!-- /admin-page -->
 
 <script>
-    // Smooth tab scrolling
-    document.querySelectorAll('.tab').forEach(tab => {
+    // Live clock
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('live-clock').textContent =
+            now.toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }) + ' · ' +
+            now.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // Tabs
+    const tabs = document.querySelectorAll('.admin-tab');
+    const sections = { users: document.getElementById('users'), feedback: document.getElementById('feedback') };
+
+    tabs.forEach(tab => {
         tab.addEventListener('click', e => {
             e.preventDefault();
-            const target = document.querySelector(tab.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            const target = tab.dataset.tab;
+            tabs.forEach(t => t.classList.remove('active'));
             tab.classList.add('active');
+            Object.entries(sections).forEach(([key, el]) => {
+                el.style.display = key === target ? 'block' : 'none';
+            });
         });
     });
 </script>
