@@ -134,7 +134,7 @@ def find_next_slot(user_id, target_date, duration_minutes):
 
 def get_available_minutes_on_day(user_id, target_date):
     """
-    Returns total schedulable minutes on a day —
+    Returns total schedulable minutes on a day
     free time minus already booked time (including breaks).
     Does NOT add break after the last session.
     """
@@ -241,8 +241,8 @@ def get_dependency_order(tasks, user_id):
       externally blocked and skipped this run.
 
     Returns:
-        ordered_tasks  — list of tasks in safe scheduling order
-        blocked_ids    — set of task IDs blocked by external undone tasks
+        ordered_tasks  list of tasks in safe scheduling order
+        blocked_ids    set of task IDs blocked by external undone tasks
     """
     task_ids  = {t.id for t in tasks}
     task_map  = {t.id: t for t in tasks}
@@ -263,15 +263,15 @@ def get_dependency_order(tasks, user_id):
             blocker    = Task.query.get(blocker_id)
 
             if blocker is None:
-                # blocker was deleted — ignore this dependency
+                # blocker was deleted ignore this dependency
                 continue
 
             if blocker.status == 'done':
-                # blocker already done — no constraint needed
+                # blocker already done no constraint needed
                 continue
 
             if blocker_id in task_ids:
-                # blocker is in our schedulable set — add a graph edge
+                # blocker is in our schedulable set add a graph edge
                 # blocker must come before task
                 graph[blocker_id].append(task.id)
                 in_degree[task.id] += 1
@@ -313,7 +313,7 @@ def _dep_sort_key(task):
     Higher = schedule sooner.
     """
     score = priority_score(task)
-    # also factor in deadline — sooner deadline = higher urgency
+    # also factor in deadline sooner deadline = higher urgency
     if task.deadline:
         days_until = (task.deadline - date.today()).days
         # invert so closer deadline = higher score
@@ -327,7 +327,7 @@ def schedule_tasks(user_id, days_ahead=14):
     """
     Main scheduling function.
     1. Fetches all pending/in-progress/delayed tasks.
-    2. Resolves dependency order — tasks are scheduled after their blockers.
+    2. Resolves dependency order tasks are scheduled after their blockers.
     3. Applies deadline-first + priority sort within the dependency order.
     4. Distributes sessions across free time, respecting busy hours,
        breaks, mood settings, and deadlines.
@@ -372,7 +372,7 @@ def schedule_tasks(user_id, days_ahead=14):
     # Tasks at the same dependency level are sorted by deadline proximity
     # first, then by priority score. This preserves topological order
     # because the dependency graph already determines which tasks can run
-    # first — we only re-sort tasks that are at the same "level".
+    # first we only re-sort tasks that are at the same "level".
     def deadline_sort_key(task):
         if task.deadline:
             days_until = (task.deadline - today).days
@@ -435,7 +435,7 @@ def schedule_tasks(user_id, days_ahead=14):
                     start_t, end_t = slot
 
                     label = (
-                        f'{task.title} — Part {session_number} of {total_sessions}'
+                        f'{task.title} Part {session_number} of {total_sessions}'
                         if total_sessions > 1
                         else task.title
                     )
@@ -523,7 +523,7 @@ def _stable_deadline_sort(ordered_tasks, today):
 
 def schedule_recurring_tasks(user_id, days_ahead=14):
     """
-    Handles recurring tasks — places one session per day (daily)
+    Handles recurring tasks places one session per day (daily)
     or one per week (weekly) within the scheduling window.
     Recurring tasks are not subject to dependency ordering.
     """
@@ -578,7 +578,7 @@ def schedule_recurring_tasks(user_id, days_ahead=14):
                 )
 
                 # check against other already-booked sessions on this date
-                # (raw session times, no break padding — recurring tasks own their fixed slot)
+                # (raw session times, no break padding recurring tasks own their fixed slot)
                 other_sessions = ScheduleSession.query.filter(
                     ScheduleSession.user_id == user_id,
                     ScheduleSession.date    == target_date,
@@ -604,9 +604,9 @@ def schedule_recurring_tasks(user_id, days_ahead=14):
                     )
                     db.session.add(session)
                 # if the preferred slot is genuinely blocked, skip this day
-                # (don't fall back — the user wants a fixed time)
+                # (don't fall back the user wants a fixed time)
             else:
-                # no preferred time — find the next available slot as before
+                # no preferred time find the next available slot as before
                 slot = find_next_slot(user_id, target_date, session_min)
                 if slot:
                     start_t, end_t = slot

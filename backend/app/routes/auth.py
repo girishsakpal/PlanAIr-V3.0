@@ -101,4 +101,4 @@ def logout():
 @login_required
 def toggle_dark_mode():
     current_user.toggle_dark_mode()
-    return '', 204  # no content — JS handles the UI update
+    return '', 204  # no content JS handles the UI update

@@ -82,7 +82,7 @@ def _check_overdue_tasks(user_id, today):
 
         days_overdue = (today - task.deadline).days
         if days_overdue == 1:
-            msg = f'"{task.title}" was due yesterday — reschedule or update its deadline.'
+            msg = f'"{task.title}" was due yesterday reschedule or update its deadline.'
         elif days_overdue <= 3:
             msg = f'"{task.title}" is {days_overdue} days overdue. Worth tackling soon.'
         else:
@@ -118,7 +118,7 @@ def _check_overload(user_id, today):
         _add_suggestion(
             user_id,
             'reduce_load',
-            f'You have {hours}h of work scheduled today — that\'s a heavy load. '
+            f'You have {hours}h of work scheduled today that\'s a heavy load. '
             f'Consider moving 1–2 lower priority tasks to tomorrow.'
         )
 
@@ -171,7 +171,7 @@ def _check_neglected_important(user_id, today):
                 days_left = (task.deadline - today).days
                 if days_left <= 3:
                     msg = (f'"{task.title}" is important and due in {days_left} day'
-                           f'{"s" if days_left != 1 else ""} — it needs your attention today.')
+                           f'{"s" if days_left != 1 else ""} it needs your attention today.')
                 else:
                     msg = (f'"{task.title}" hasn\'t been worked on recently. '
                            f'Even 30 minutes today would make a difference.')
@@ -199,7 +199,7 @@ def _check_mood(user_id, today):
         return
 
     if mood.mood_score == 1:
-        msg = ('Rough day — that\'s okay. Focus on just one critical task '
+        msg = ('Rough day that\'s okay. Focus on just one critical task '
                'and give yourself permission to take it easy.')
     elif mood.mood_score == 2:
         msg = ('Feeling low today. Consider tackling your most important task '
@@ -219,11 +219,11 @@ def _check_streak(user_id, today):
     streak = get_streak(user_id, today)
 
     milestones = {
-        3:  'You\'ve been consistent for 3 days straight — great start!',
+        3:  'You\'ve been consistent for 3 days straight great start!',
         5:  '5-day streak! You\'re building a solid habit.',
         7:  'One full week of consistency. That\'s genuinely impressive.',
         14: 'Two weeks strong. Your schedule is becoming second nature.',
-        21: '21 days — habit formation territory. Keep going.',
+        21: '21 days habit formation territory. Keep going.',
         30: '30-day streak. You\'ve mastered the system.'
     }
 
@@ -267,7 +267,7 @@ def _check_partial_completions(user_id, today):
             user_id,
             'reduce_load',
             'You\'ve been logging partial hours several times this week. '
-            'Your sessions might be too long — consider reducing estimated '
+            'Your sessions might be too long consider reducing estimated '
             'hours on your tasks to better match your actual pace.'
         )
 
@@ -290,7 +290,7 @@ def _check_all_done(user_id, today):
         _add_suggestion(
             user_id,
             'streak',
-            'All done for today! Take a proper break — '
+            'All done for today! Take a proper break '
             'you\'ve earned it.'
         )
 

@@ -30,6 +30,12 @@ def home():
                            streak=streak)
 
 
+@tasks_bp.route('/todo')
+@login_required
+def todo():
+    return render_template('tasks/todo.html')
+
+
 @tasks_bp.route('/dashboard')
 @login_required
 def dashboard():
@@ -238,7 +244,7 @@ def edit_task(task_id):
             # still fully done
             task.status = 'done'
         elif completed > 0:
-            # partially done — reopen as in-progress
+            # partially done reopen as in-progress
             task.status = 'in-progress'
         else:
             # nothing logged yet
@@ -436,7 +442,7 @@ def remove_dependency(dep_id):
 @tasks_bp.route('/tasks/<int:task_id>/complete-recurring', methods=['POST'])
 @login_required
 def complete_recurring(task_id):
-    """Permanently retire a recurring task — mark done and add to history."""
+    """Permanently retire a recurring task mark done and add to history."""
     task = Task.query.filter_by(
         id=task_id, user_id=current_user.id
     ).first_or_404()

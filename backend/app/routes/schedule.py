@@ -70,7 +70,7 @@ def _parse_time(time_str):
     """Convert 'HH:MM' string to Python time object."""
     from datetime import time
     h, m = map(int, time_str.split(':'))
-    # 24:00 is invalid — cap it at 23:59
+    # 24:00 is invalid cap it at 23:59
     if h >= 24:
         h = 23
         m = 59
@@ -139,7 +139,7 @@ def generate_schedule():
     run_suggestion_engine(current_user.id)
 
     flash(
-        f'Schedule generated from {now.strftime("%I:%M %p")} onwards — '
+        f'Schedule generated from {now.strftime("%I:%M %p")} onwards '
         f'no tasks scheduled before this time today.',
         'success'
     )
@@ -199,7 +199,7 @@ def toggle_session(session_id):
         if task.is_recurring:
             task.days_completed = (task.days_completed or 0) + 1
 
-    # auto-complete task when all hours done (but NOT recurring — they keep going)
+    # auto-complete task when all hours done (but NOT recurring they keep going)
     if not task.is_recurring and task.completed_hours >= task.estimated_hours:
         task.completed_hours = task.estimated_hours
         was_done_before = task.status == 'done'
@@ -223,7 +223,7 @@ def toggle_session(session_id):
             )
             db.session.add(history)
     elif task.is_recurring:
-        # recurring tasks always stay pending/in-progress — reset hours so
+        # recurring tasks always stay pending/in-progress reset hours so
         # they keep getting scheduled each day/week
         task.completed_hours = 0
         task.status = 'in-progress'

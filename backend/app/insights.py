@@ -221,7 +221,7 @@ def get_plain_language_summary(stats, productive_hour):
     )
 
     return (
-        f'You\'ve had {quality} week — completing {stats["week_completed"]} of '
+        f'You\'ve had {quality} week completing {stats["week_completed"]} of '
         f'{stats["week_total"]} sessions with an average score of '
         f'{stats["avg_score"]}%.{hour_text}'
     )

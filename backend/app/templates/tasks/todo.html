@@ -1,0 +1,1153 @@
+{% extends "base.html" %}
+{% block title %}To-Do List — PlanAIr{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ═══════════════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════════════ */
+.app-shell {
+    display: flex;
+    min-height: calc(100vh - 64px);
+    margin: -2rem -3rem 0;
+}
+
+@media (max-width: 768px) {
+    .app-shell { margin: -1.25rem -1rem 0; flex-direction: column; }
+}
+
+/* ═══════════════════════════════════════════════
+   SIDEBAR (shared with home)
+═══════════════════════════════════════════════ */
+.sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: linear-gradient(180deg, #0d0b20 0%, #12103a 60%, #0d0b20 100%);
+    border-right: 1px solid rgba(255,255,255,0.07);
+    display: flex;
+    flex-direction: column;
+    padding: 2rem 0 1.5rem;
+    position: sticky;
+    top: 64px;
+    height: calc(100vh - 64px);
+    overflow-y: auto;
+}
+
+[data-theme="light"] .sidebar {
+    background: linear-gradient(180deg, #1a1560 0%, #302b8a 60%, #1a1560 100%);
+    border-right: 1px solid rgba(255,255,255,0.1);
+}
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0 1.5rem 1.75rem;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 1.5rem;
+}
+
+.sidebar-brand-logo {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    object-fit: cover;
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.1);
+}
+
+.sidebar-brand-name { font-size: 1.1rem; font-weight: 800; color: #fff; letter-spacing: -0.01em; }
+.sidebar-brand-version { font-size: 0.65rem; color: rgba(255,255,255,0.35); font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
+
+.sidebar-section-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.28);
+    padding: 0 1.5rem;
+    margin-bottom: 0.5rem;
+    margin-top: 1.25rem;
+}
+
+.sidebar-nav { display: flex; flex-direction: column; gap: 2px; padding: 0 0.75rem; }
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 10px;
+    color: rgba(255,255,255,0.6);
+    text-decoration: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.18s;
+    position: relative;
+}
+
+.sidebar-link:hover { background: rgba(255,255,255,0.07); color: #fff; text-decoration: none; }
+
+.sidebar-link.active {
+    background: rgba(52,211,153,0.15);
+    color: #6ee7b7;
+    font-weight: 600;
+}
+
+.sidebar-link.active::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 50%;
+    transform: translateY(-50%);
+    width: 3px; height: 60%;
+    background: #34d399;
+    border-radius: 0 3px 3px 0;
+}
+
+.sidebar-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.06);
+    transition: background 0.18s;
+}
+
+.sidebar-link:hover .sidebar-icon { background: rgba(255,255,255,0.1); }
+.sidebar-link.active .sidebar-icon { background: rgba(52,211,153,0.15); }
+
+.sidebar-link-new {
+    margin-left: auto;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0.12rem 0.4rem;
+    border-radius: 99px;
+    background: rgba(52,211,153,0.15);
+    color: #34d399;
+    border: 1px solid rgba(52,211,153,0.25);
+}
+
+.sidebar-user {
+    margin-top: auto;
+    padding: 1rem 1.25rem 0;
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.sidebar-user-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.07);
+}
+
+.sidebar-user-avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #818cf8, #a78bfa);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.875rem; font-weight: 700; color: white; flex-shrink: 0;
+}
+
+.sidebar-user-name { font-size: 0.82rem; font-weight: 600; color: rgba(255,255,255,0.85); line-height: 1.2; }
+.sidebar-user-status { font-size: 0.7rem; color: rgba(255,255,255,0.35); }
+
+.sidebar-toggle {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1rem;
+    margin: 0 0 1rem;
+    background: rgba(52,211,153,0.1);
+    border: 1px solid rgba(52,211,153,0.2);
+    color: #34d399;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    width: calc(100% - 2rem);
+    margin-left: 1rem;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        position: fixed; left: -280px; top: 0;
+        height: 100vh; z-index: 200;
+        transition: left 0.25s ease;
+        padding-top: 4rem;
+    }
+    .sidebar.sidebar-open { left: 0; }
+    .sidebar-overlay {
+        display: none; position: fixed; inset: 0;
+        background: rgba(0,0,0,0.5); z-index: 199;
+        backdrop-filter: blur(2px);
+    }
+    .sidebar-overlay.active { display: block; }
+    .sidebar-toggle { display: flex; }
+}
+
+/* ═══════════════════════════════════════════════
+   TODO MAIN PANEL
+═══════════════════════════════════════════════ */
+.todo-main { flex: 1; min-width: 0; overflow-x: hidden; }
+
+/* header banner */
+.todo-header {
+    background: linear-gradient(135deg, #064e3b, #065f46, #047857);
+    padding: 3rem 3.5rem 3rem;
+    position: relative;
+    overflow: hidden;
+}
+
+[data-theme="light"] .todo-header {
+    background: linear-gradient(135deg, #064e3b, #065f46, #047857);
+}
+
+.todo-header::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');
+}
+
+.todo-header::after {
+    content: '';
+    position: absolute; top: -80px; right: -80px;
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, rgba(52,211,153,0.2) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.todo-header-inner {
+    position: relative; z-index: 1;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+
+.todo-header-left {}
+
+.todo-header-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.12);
+    color: #a7f3d0;
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.8rem;
+    margin-bottom: 0.85rem;
+    letter-spacing: 0.04em;
+}
+
+.todo-header h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #fff;
+    margin: 0 0 0.35rem;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+}
+
+.todo-header h1 span {
+    background: linear-gradient(90deg, #a7f3d0, #6ee7b7);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.todo-header-sub {
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.6);
+    margin: 0;
+    line-height: 1.6;
+}
+
+.todo-header-stats {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.todo-hstat {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 12px;
+    padding: 0.6rem 1.1rem;
+    text-align: center;
+    backdrop-filter: blur(6px);
+    min-width: 72px;
+}
+
+.todo-hstat-num {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1;
+}
+
+.todo-hstat-label {
+    display: block;
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.5);
+    margin-top: 0.2rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+@media (max-width: 768px) {
+    .todo-header { padding: 2rem 1.25rem; }
+    .todo-header h1 { font-size: 1.5rem; }
+    .todo-header-inner { flex-direction: column; align-items: flex-start; }
+}
+
+/* ── add task bar ── */
+.todo-body { padding: 2rem 3.5rem; }
+@media (max-width: 768px) { .todo-body { padding: 1.5rem 1.25rem; } }
+
+.add-task-card {
+    background: var(--grad-card);
+    border: 1px solid rgba(52,211,153,0.25);
+    border-radius: var(--radius-xl);
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow-sm), 0 0 30px rgba(52,211,153,0.06);
+}
+
+.add-task-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #34d399;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.add-task-row {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.add-task-input {
+    flex: 1;
+    min-width: 200px;
+    background: var(--bg-secondary);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 0.7rem 1rem;
+    color: var(--text);
+    font-size: 0.9rem;
+    font-family: inherit;
+    transition: border-color 0.18s, box-shadow 0.18s;
+    outline: none;
+}
+
+.add-task-input:focus {
+    border-color: #34d399;
+    box-shadow: 0 0 0 3px rgba(52,211,153,0.1);
+}
+
+.add-task-input::placeholder { color: var(--text-subtle); }
+
+.add-task-select {
+    background: var(--bg-secondary);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 0.7rem 0.9rem;
+    color: var(--text);
+    font-size: 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.18s;
+    min-width: 130px;
+}
+
+.add-task-select:focus { border-color: #34d399; }
+
+.btn-add {
+    background: linear-gradient(135deg, #059669, #10b981);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 0.7rem 1.5rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: inherit;
+}
+
+.btn-add:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(16,185,129,0.35);
+}
+
+.btn-add:active { transform: translateY(0); }
+
+/* ── filters ── */
+.filters-row {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+    align-items: center;
+}
+
+.filter-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    margin-right: 0.25rem;
+}
+
+.filter-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.38rem 0.85rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+}
+
+.filter-btn:hover { border-color: rgba(52,211,153,0.4); color: var(--text); }
+
+.filter-btn.active {
+    background: rgba(52,211,153,0.12);
+    border-color: rgba(52,211,153,0.35);
+    color: #34d399;
+}
+
+.filter-sep { width: 1px; height: 20px; background: var(--border); margin: 0 0.25rem; }
+
+.search-input {
+    flex: 1;
+    min-width: 160px;
+    max-width: 260px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.38rem 0.85rem;
+    font-size: 0.82rem;
+    color: var(--text);
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.15s;
+    margin-left: auto;
+}
+
+.search-input:focus { border-color: #34d399; }
+.search-input::placeholder { color: var(--text-subtle); }
+
+/* ── task list ── */
+.task-list { display: flex; flex-direction: column; gap: 0; }
+
+.task-group-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    padding: 0.5rem 0;
+    margin-top: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.task-group-count {
+    background: var(--bg-secondary);
+    border-radius: 99px;
+    padding: 0.1rem 0.5rem;
+    font-size: 0.65rem;
+    color: var(--text-subtle);
+}
+
+.task-item {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.8rem 1rem;
+    border-radius: 10px;
+    background: var(--grad-card);
+    border: 1px solid var(--border);
+    margin-bottom: 0.5rem;
+    transition: all 0.18s;
+    position: relative;
+    overflow: hidden;
+}
+
+.task-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 15%; bottom: 15%;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--task-accent, var(--border));
+    opacity: 0.7;
+}
+
+.task-item:hover {
+    border-color: rgba(52,211,153,0.2);
+    box-shadow: var(--shadow-sm);
+    transform: translateX(2px);
+}
+
+.task-item.completed {
+    opacity: 0.55;
+}
+
+.task-item.completed .task-text {
+    text-decoration: line-through;
+    color: var(--text-muted);
+}
+
+/* priority accents */
+.task-item[data-priority="high"]   { --task-accent: #ef4444; }
+.task-item[data-priority="medium"] { --task-accent: #f59e0b; }
+.task-item[data-priority="low"]    { --task-accent: #6b7280; }
+
+/* checkbox */
+.task-check {
+    width: 20px; height: 20px;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.18s;
+    background: transparent;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.task-check:hover { border-color: #34d399; background: rgba(52,211,153,0.08); }
+
+.task-check.checked {
+    background: linear-gradient(135deg, #059669, #10b981);
+    border-color: #10b981;
+}
+
+.task-check.checked::after {
+    content: '✓';
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.task-text {
+    flex: 1;
+    font-size: 0.9rem;
+    color: var(--text);
+    line-height: 1.45;
+    word-break: break-word;
+    cursor: pointer;
+}
+
+.task-text-edit {
+    flex: 1;
+    background: var(--bg-secondary);
+    border: 1.5px solid #34d399;
+    border-radius: 6px;
+    padding: 0.3rem 0.6rem;
+    font-size: 0.9rem;
+    color: var(--text);
+    outline: none;
+    font-family: inherit;
+}
+
+.task-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.priority-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.18rem 0.55rem;
+    border-radius: 99px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+}
+
+.priority-badge.high   { background: rgba(239,68,68,0.12);  color: #ef4444;  border: 1px solid rgba(239,68,68,0.25);  }
+.priority-badge.medium { background: rgba(245,158,11,0.12); color: #f59e0b;  border: 1px solid rgba(245,158,11,0.25); }
+.priority-badge.low    { background: rgba(107,114,128,0.1); color: #9ca3af;  border: 1px solid rgba(107,114,128,0.2); }
+
+.task-due {
+    font-size: 0.72rem;
+    color: var(--text-subtle);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.task-due.overdue { color: #ef4444; }
+
+.task-actions {
+    display: flex;
+    gap: 0.3rem;
+    opacity: 0;
+    transition: opacity 0.15s;
+}
+
+.task-item:hover .task-actions { opacity: 1; }
+
+.task-btn {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-size: 0.78rem;
+    transition: all 0.15s;
+    color: var(--text-muted);
+}
+
+.task-btn:hover { background: var(--bg-secondary); border-color: var(--border); color: var(--text); }
+.task-btn.delete:hover { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); color: #ef4444; }
+
+/* ── empty state ── */
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--text-muted);
+}
+
+.empty-state-icon {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    font-size: 0.85rem;
+    color: var(--text-subtle);
+    line-height: 1.6;
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+/* ── bottom bar ── */
+.todo-footer {
+    margin-top: 1.5rem;
+    padding: 1rem 1.25rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.todo-footer-count {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+.todo-footer-count strong { color: var(--text); }
+
+.btn-clear-done {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.38rem 0.85rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+}
+
+.btn-clear-done:hover {
+    border-color: rgba(239,68,68,0.3);
+    color: #ef4444;
+    background: rgba(239,68,68,0.06);
+}
+
+/* progress bar */
+.progress-bar-wrap {
+    background: var(--border);
+    border-radius: 99px;
+    height: 5px;
+    overflow: hidden;
+    margin-top: 0.35rem;
+    flex: 1;
+    min-width: 80px;
+    max-width: 200px;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, #059669, #34d399);
+    transition: width 0.4s ease;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<div class="app-shell">
+
+    <!-- ═══════════════ SIDEBAR ═══════════════ -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="PlanAIr" class="sidebar-brand-logo">
+            <div>
+                <div class="sidebar-brand-name">PlanAIr</div>
+                <div class="sidebar-brand-version">v3.0</div>
+            </div>
+        </div>
+
+        <div class="sidebar-section-label">Main</div>
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('tasks.home') }}" class="sidebar-link">
+                <span class="sidebar-icon">🏠</span>
+                Home
+            </a>
+            <a href="{{ url_for('tasks.dashboard') }}" class="sidebar-link">
+                <span class="sidebar-icon">🧠</span>
+                Smart Planner
+            </a>
+            <a href="{{ url_for('tasks.todo') }}" class="sidebar-link active">
+                <span class="sidebar-icon">✅</span>
+                To-Do List
+                <span class="sidebar-link-new">New</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-section-label">Planner</div>
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('schedule.schedule_view') }}" class="sidebar-link">
+                <span class="sidebar-icon">📅</span>
+                Today's Schedule
+            </a>
+            <a href="{{ url_for('schedule.week_view') }}" class="sidebar-link">
+                <span class="sidebar-icon">🗓</span>
+                Week View
+            </a>
+            <a href="{{ url_for('insights.insights') }}" class="sidebar-link">
+                <span class="sidebar-icon">📈</span>
+                Insights
+            </a>
+            <a href="{{ url_for('tasks.task_history') }}" class="sidebar-link">
+                <span class="sidebar-icon">🕒</span>
+                History
+            </a>
+        </nav>
+
+        <div class="sidebar-section-label">Support</div>
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('feedback.submit_feedback') }}" class="sidebar-link">
+                <span class="sidebar-icon">💬</span>
+                Feedback
+            </a>
+            <a href="https://mail.google.com/mail/?view=cm&to=abcd@gmail.com&su=PlanAIr Contact" target="_blank" class="sidebar-link">
+                <span class="sidebar-icon">✉️</span>
+                Contact Us
+            </a>
+        </nav>
+
+        <div class="sidebar-user">
+            <div class="sidebar-user-card">
+                <div class="sidebar-user-avatar">{{ current_user.name[0].upper() }}</div>
+                <div>
+                    <div class="sidebar-user-name">{{ current_user.name.split()[0] }}</div>
+                    <div class="sidebar-user-status">To-Do List</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ═══════════════ TODO MAIN ═══════════════ -->
+    <div class="todo-main">
+
+        <button class="sidebar-toggle" onclick="openSidebar()">☰ &nbsp;Menu</button>
+
+        <!-- header -->
+        <div class="todo-header">
+            <div class="todo-header-inner">
+                <div class="todo-header-left">
+                    <div class="todo-header-badge">✅ Quick capture</div>
+                    <h1>Your <span>To-Do</span> List</h1>
+                    <p class="todo-header-sub">Add tasks, set priorities, and check them off. Fast and simple.</p>
+                </div>
+                <div class="todo-header-stats">
+                    <div class="todo-hstat">
+                        <span class="todo-hstat-num" id="stat-total">0</span>
+                        <span class="todo-hstat-label">Total</span>
+                    </div>
+                    <div class="todo-hstat">
+                        <span class="todo-hstat-num" id="stat-done">0</span>
+                        <span class="todo-hstat-label">Done</span>
+                    </div>
+                    <div class="todo-hstat">
+                        <span class="todo-hstat-num" id="stat-left">0</span>
+                        <span class="todo-hstat-label">Left</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="todo-body">
+
+            <!-- add task card -->
+            <div class="add-task-card">
+                <div class="add-task-title">＋ Add new task</div>
+                <div class="add-task-row">
+                    <input
+                        type="text"
+                        id="newTaskInput"
+                        class="add-task-input"
+                        placeholder="What needs to get done?"
+                        maxlength="200"
+                        autocomplete="off"
+                    >
+                    <select id="newTaskPriority" class="add-task-select">
+                        <option value="medium">🟡 Medium priority</option>
+                        <option value="high">🔴 High priority</option>
+                        <option value="low">⚪ Low priority</option>
+                    </select>
+                    <input type="date" id="newTaskDue" class="add-task-select" style="min-width:140px;" title="Due date (optional)">
+                    <button class="btn-add" onclick="addTask()">
+                        <span>＋</span> Add Task
+                    </button>
+                </div>
+            </div>
+
+            <!-- filters -->
+            <div class="filters-row">
+                <span class="filter-label">Filter:</span>
+                <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">All</button>
+                <button class="filter-btn" data-filter="active" onclick="setFilter('active', this)">Active</button>
+                <button class="filter-btn" data-filter="completed" onclick="setFilter('completed', this)">Done</button>
+                <div class="filter-sep"></div>
+                <button class="filter-btn" data-filter="high" onclick="setFilter('high', this)">🔴 High</button>
+                <button class="filter-btn" data-filter="medium" onclick="setFilter('medium', this)">🟡 Medium</button>
+                <button class="filter-btn" data-filter="low" onclick="setFilter('low', this)">⚪ Low</button>
+                <input type="text" class="search-input" id="searchInput" placeholder="🔍 Search tasks…" oninput="renderTasks()">
+            </div>
+
+            <!-- task list -->
+            <div class="task-list" id="taskList"></div>
+
+            <!-- empty state (shown by JS) -->
+            <div class="empty-state" id="emptyState" style="display:none;">
+                <div class="empty-state-icon">📋</div>
+                <h3>No tasks here</h3>
+                <p>Add your first task above, or adjust the filter to see other tasks.</p>
+            </div>
+
+            <!-- footer -->
+            <div class="todo-footer" id="todoFooter">
+                <div>
+                    <div class="todo-footer-count" id="footerCount">0 tasks · 0 done</div>
+                    <div style="display:flex;align-items:center;gap:0.75rem;margin-top:0.4rem;">
+                        <div class="progress-bar-wrap">
+                            <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+                        </div>
+                        <span style="font-size:0.72rem;color:var(--text-subtle);" id="progressPct">0%</span>
+                    </div>
+                </div>
+                <button class="btn-clear-done" onclick="clearDone()">Clear completed</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ═══════════════════════════════════════════
+// STORAGE KEY (per user)
+const STORAGE_KEY = 'planair_todos_{{ current_user.id }}';
+
+// ═══════════════════════════════════════════
+// STATE
+let tasks = [];
+let currentFilter = 'all';
+
+// ═══════════════════════════════════════════
+// LOAD / SAVE
+function loadTasks() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        tasks = raw ? JSON.parse(raw) : [];
+    } catch(e) { tasks = []; }
+}
+
+function saveTasks() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks)); } catch(e) {}
+}
+
+// ═══════════════════════════════════════════
+// ADD
+function addTask() {
+    const input = document.getElementById('newTaskInput');
+    const text = input.value.trim();
+    if (!text) { input.focus(); return; }
+
+    const priority = document.getElementById('newTaskPriority').value;
+    const due = document.getElementById('newTaskDue').value;
+
+    const task = {
+        id: Date.now().toString(),
+        text,
+        priority,
+        due: due || null,
+        completed: false,
+        createdAt: new Date().toISOString()
+    };
+
+    tasks.unshift(task);
+    saveTasks();
+    input.value = '';
+    document.getElementById('newTaskDue').value = '';
+    renderTasks();
+    input.focus();
+}
+
+// ═══════════════════════════════════════════
+// TOGGLE
+function toggleTask(id) {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    task.completed = !task.completed;
+    saveTasks();
+    renderTasks();
+}
+
+// ═══════════════════════════════════════════
+// DELETE
+function deleteTask(id) {
+    tasks = tasks.filter(t => t.id !== id);
+    saveTasks();
+    renderTasks();
+}
+
+// ═══════════════════════════════════════════
+// EDIT
+function startEdit(id) {
+    const item = document.querySelector(`.task-item[data-id="${id}"]`);
+    if (!item) return;
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+
+    const textEl = item.querySelector('.task-text');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'task-text-edit';
+    input.value = task.text;
+    textEl.replaceWith(input);
+    input.focus();
+    input.select();
+
+    function save() {
+        const val = input.value.trim();
+        if (val) { task.text = val; saveTasks(); }
+        renderTasks();
+    }
+
+    input.addEventListener('blur', save);
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); save(); }
+        if (e.key === 'Escape') { renderTasks(); }
+    });
+}
+
+// ═══════════════════════════════════════════
+// FILTER
+function setFilter(filter, btn) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderTasks();
+}
+
+// ═══════════════════════════════════════════
+// CLEAR DONE
+function clearDone() {
+    if (!tasks.some(t => t.completed)) return;
+    if (!confirm('Remove all completed tasks?')) return;
+    tasks = tasks.filter(t => !t.completed);
+    saveTasks();
+    renderTasks();
+}
+
+// ═══════════════════════════════════════════
+// RENDER
+function renderTasks() {
+    const list = document.getElementById('taskList');
+    const emptyState = document.getElementById('emptyState');
+    const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
+
+    // filter
+    let visible = tasks.filter(task => {
+        if (searchVal && !task.text.toLowerCase().includes(searchVal)) return false;
+        if (currentFilter === 'active')    return !task.completed;
+        if (currentFilter === 'completed') return task.completed;
+        if (currentFilter === 'high')      return task.priority === 'high' && !task.completed;
+        if (currentFilter === 'medium')    return task.priority === 'medium' && !task.completed;
+        if (currentFilter === 'low')       return task.priority === 'low' && !task.completed;
+        return true;
+    });
+
+    // sort: incomplete first, then by priority
+    const pOrder = { high: 0, medium: 1, low: 2 };
+    visible.sort((a, b) => {
+        if (a.completed !== b.completed) return a.completed ? 1 : -1;
+        return (pOrder[a.priority] ?? 1) - (pOrder[b.priority] ?? 1);
+    });
+
+    list.innerHTML = '';
+
+    if (visible.length === 0) {
+        emptyState.style.display = 'block';
+    } else {
+        emptyState.style.display = 'none';
+
+        // group into active + done
+        const active = visible.filter(t => !t.completed);
+        const done   = visible.filter(t => t.completed);
+
+        if (active.length > 0) {
+            if (done.length > 0) {
+                // show group label only when both exist
+                const lbl = document.createElement('div');
+                lbl.className = 'task-group-label';
+                lbl.innerHTML = `Active <span class="task-group-count">${active.length}</span>`;
+                list.appendChild(lbl);
+            }
+            active.forEach(t => list.appendChild(buildTaskEl(t)));
+        }
+
+        if (done.length > 0) {
+            const lbl = document.createElement('div');
+            lbl.className = 'task-group-label';
+            lbl.innerHTML = `Completed <span class="task-group-count">${done.length}</span>`;
+            list.appendChild(lbl);
+            done.forEach(t => list.appendChild(buildTaskEl(t)));
+        }
+    }
+
+    // stats
+    const total = tasks.length;
+    const doneCount = tasks.filter(t => t.completed).length;
+    const leftCount = total - doneCount;
+    const pct = total > 0 ? Math.round((doneCount / total) * 100) : 0;
+
+    document.getElementById('stat-total').textContent = total;
+    document.getElementById('stat-done').textContent = doneCount;
+    document.getElementById('stat-left').textContent = leftCount;
+    document.getElementById('footerCount').textContent = `${total} task${total !== 1 ? 's' : ''} · ${doneCount} done`;
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('progressPct').textContent = pct + '%';
+}
+
+function buildTaskEl(task) {
+    const today = new Date().toISOString().slice(0, 10);
+    const isOverdue = task.due && task.due < today && !task.completed;
+
+    const item = document.createElement('div');
+    item.className = 'task-item' + (task.completed ? ' completed' : '');
+    item.dataset.id = task.id;
+    item.dataset.priority = task.priority;
+
+    const prioLabel = { high: 'High', medium: 'Medium', low: 'Low' }[task.priority] || 'Medium';
+
+    let dueHtml = '';
+    if (task.due) {
+        const d = new Date(task.due + 'T00:00:00');
+        const formatted = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+        dueHtml = `<span class="task-due ${isOverdue ? 'overdue' : ''}">
+            ${isOverdue ? '⚠' : '📅'} ${formatted}
+        </span>`;
+    }
+
+    item.innerHTML = `
+        <div class="task-check ${task.completed ? 'checked' : ''}" onclick="toggleTask('${task.id}')"></div>
+        <div class="task-text" ondblclick="startEdit('${task.id}')" title="Double-click to edit">${escHtml(task.text)}</div>
+        <div class="task-meta">
+            ${dueHtml}
+            <span class="priority-badge ${task.priority}">${prioLabel}</span>
+            <div class="task-actions">
+                <button class="task-btn" onclick="startEdit('${task.id}')" title="Edit">✏️</button>
+                <button class="task-btn delete" onclick="deleteTask('${task.id}')" title="Delete">🗑</button>
+            </div>
+        </div>
+    `;
+
+    return item;
+}
+
+function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ═══════════════════════════════════════════
+// SIDEBAR
+function openSidebar() {
+    document.getElementById('sidebar').classList.add('sidebar-open');
+    document.getElementById('sidebarOverlay').classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('sidebar-open');
+    document.getElementById('sidebarOverlay').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+// ═══════════════════════════════════════════
+// KEYBOARD: Enter to add
+document.getElementById('newTaskInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); addTask(); }
+});
+
+// ═══════════════════════════════════════════
+// INIT
+loadTasks();
+renderTasks();
+</script>
+{% endblock %}

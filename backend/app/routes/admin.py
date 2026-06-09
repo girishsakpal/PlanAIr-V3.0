@@ -24,7 +24,7 @@ def admin_login_required(f):
 
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def login():
-    """Separate admin login — credentials come from env vars only."""
+    """Separate admin login credentials come from env vars only."""
     if session.get('admin_logged_in'):
         return redirect(url_for('admin.panel'))
 

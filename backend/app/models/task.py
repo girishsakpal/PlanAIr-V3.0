@@ -72,7 +72,7 @@ class TaskHistory(db.Model):
 
     id              = db.Column(db.Integer, primary_key=True)
     user_id         = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    # original task id — kept for reference even after task deletion
+    # original task id kept for reference even after task deletion
     original_task_id = db.Column(db.Integer, nullable=True)
     title           = db.Column(db.String(200), nullable=False)
     description     = db.Column(db.Text, nullable=True)
