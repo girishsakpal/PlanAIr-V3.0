@@ -1,194 +1,9 @@
 {% extends "base.html" %}
+{% set active_page = 'todo' %}
 {% block title %}To-Do List — PlanAIr{% endblock %}
 
 {% block extra_css %}
 <style>
-/* ═══════════════════════════════════════════════
-   LAYOUT
-═══════════════════════════════════════════════ */
-.app-shell {
-    display: flex;
-    min-height: calc(100vh - 64px);
-    margin: -2rem -3rem 0;
-}
-
-@media (max-width: 768px) {
-    .app-shell { margin: -1.25rem -1rem 0; flex-direction: column; }
-}
-
-/* ═══════════════════════════════════════════════
-   SIDEBAR (shared with home)
-═══════════════════════════════════════════════ */
-.sidebar {
-    width: 260px;
-    flex-shrink: 0;
-    background: linear-gradient(180deg, #0d0b20 0%, #12103a 60%, #0d0b20 100%);
-    border-right: 1px solid rgba(255,255,255,0.07);
-    display: flex;
-    flex-direction: column;
-    padding: 2rem 0 1.5rem;
-    position: sticky;
-    top: 64px;
-    height: calc(100vh - 64px);
-    overflow-y: auto;
-}
-
-[data-theme="light"] .sidebar {
-    background: linear-gradient(180deg, #1a1560 0%, #302b8a 60%, #1a1560 100%);
-    border-right: 1px solid rgba(255,255,255,0.1);
-}
-
-.sidebar-brand {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0 1.5rem 1.75rem;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    margin-bottom: 1.5rem;
-}
-
-.sidebar-brand-logo {
-    width: 38px; height: 38px;
-    border-radius: 10px;
-    object-fit: cover;
-    box-shadow: 0 0 0 2px rgba(255,255,255,0.1);
-}
-
-.sidebar-brand-name { font-size: 1.1rem; font-weight: 800; color: #fff; letter-spacing: -0.01em; }
-.sidebar-brand-version { font-size: 0.65rem; color: rgba(255,255,255,0.35); font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; }
-
-.sidebar-section-label {
-    font-size: 0.62rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: rgba(255,255,255,0.28);
-    padding: 0 1.5rem;
-    margin-bottom: 0.5rem;
-    margin-top: 1.25rem;
-}
-
-.sidebar-nav { display: flex; flex-direction: column; gap: 2px; padding: 0 0.75rem; }
-
-.sidebar-link {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.65rem 0.85rem;
-    border-radius: 10px;
-    color: rgba(255,255,255,0.6);
-    text-decoration: none;
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: all 0.18s;
-    position: relative;
-}
-
-.sidebar-link:hover { background: rgba(255,255,255,0.07); color: #fff; text-decoration: none; }
-
-.sidebar-link.active {
-    background: rgba(52,211,153,0.15);
-    color: #6ee7b7;
-    font-weight: 600;
-}
-
-.sidebar-link.active::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 50%;
-    transform: translateY(-50%);
-    width: 3px; height: 60%;
-    background: #34d399;
-    border-radius: 0 3px 3px 0;
-}
-
-.sidebar-icon {
-    width: 32px; height: 32px;
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1rem;
-    flex-shrink: 0;
-    background: rgba(255,255,255,0.06);
-    transition: background 0.18s;
-}
-
-.sidebar-link:hover .sidebar-icon { background: rgba(255,255,255,0.1); }
-.sidebar-link.active .sidebar-icon { background: rgba(52,211,153,0.15); }
-
-.sidebar-link-new {
-    margin-left: auto;
-    font-size: 0.6rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    padding: 0.12rem 0.4rem;
-    border-radius: 99px;
-    background: rgba(52,211,153,0.15);
-    color: #34d399;
-    border: 1px solid rgba(52,211,153,0.25);
-}
-
-.sidebar-user {
-    margin-top: auto;
-    padding: 1rem 1.25rem 0;
-    border-top: 1px solid rgba(255,255,255,0.08);
-}
-
-.sidebar-user-card {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem;
-    border-radius: 10px;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.07);
-}
-
-.sidebar-user-avatar {
-    width: 34px; height: 34px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #818cf8, #a78bfa);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.875rem; font-weight: 700; color: white; flex-shrink: 0;
-}
-
-.sidebar-user-name { font-size: 0.82rem; font-weight: 600; color: rgba(255,255,255,0.85); line-height: 1.2; }
-.sidebar-user-status { font-size: 0.7rem; color: rgba(255,255,255,0.35); }
-
-.sidebar-toggle {
-    display: none;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 1rem;
-    margin: 0 0 1rem;
-    background: rgba(52,211,153,0.1);
-    border: 1px solid rgba(52,211,153,0.2);
-    color: #34d399;
-    border-radius: 10px;
-    font-size: 0.82rem;
-    font-weight: 600;
-    cursor: pointer;
-    width: calc(100% - 2rem);
-    margin-left: 1rem;
-}
-
-@media (max-width: 768px) {
-    .sidebar {
-        position: fixed; left: -280px; top: 0;
-        height: 100vh; z-index: 200;
-        transition: left 0.25s ease;
-        padding-top: 4rem;
-    }
-    .sidebar.sidebar-open { left: 0; }
-    .sidebar-overlay {
-        display: none; position: fixed; inset: 0;
-        background: rgba(0,0,0,0.5); z-index: 199;
-        backdrop-filter: blur(2px);
-    }
-    .sidebar-overlay.active { display: block; }
-    .sidebar-toggle { display: flex; }
-}
-
 /* ═══════════════════════════════════════════════
    TODO MAIN PANEL
 ═══════════════════════════════════════════════ */
@@ -720,89 +535,13 @@
     background: linear-gradient(90deg, #059669, #34d399);
     transition: width 0.4s ease;
 }
+
 </style>
 {% endblock %}
 
 {% block content %}
-
-<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
-
-<div class="app-shell">
-
-    <!-- ═══════════════ SIDEBAR ═══════════════ -->
-    <aside class="sidebar" id="sidebar">
-        <div class="sidebar-brand">
-            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="PlanAIr" class="sidebar-brand-logo">
-            <div>
-                <div class="sidebar-brand-name">PlanAIr</div>
-                <div class="sidebar-brand-version">v3.0</div>
-            </div>
-        </div>
-
-        <div class="sidebar-section-label">Main</div>
-        <nav class="sidebar-nav">
-            <a href="{{ url_for('tasks.home') }}" class="sidebar-link">
-                <span class="sidebar-icon">🏠</span>
-                Home
-            </a>
-            <a href="{{ url_for('tasks.dashboard') }}" class="sidebar-link">
-                <span class="sidebar-icon">🧠</span>
-                Smart Planner
-            </a>
-            <a href="{{ url_for('tasks.todo') }}" class="sidebar-link active">
-                <span class="sidebar-icon">✅</span>
-                To-Do List
-                <span class="sidebar-link-new">New</span>
-            </a>
-        </nav>
-
-        <div class="sidebar-section-label">Planner</div>
-        <nav class="sidebar-nav">
-            <a href="{{ url_for('schedule.schedule_view') }}" class="sidebar-link">
-                <span class="sidebar-icon">📅</span>
-                Today's Schedule
-            </a>
-            <a href="{{ url_for('schedule.week_view') }}" class="sidebar-link">
-                <span class="sidebar-icon">🗓</span>
-                Week View
-            </a>
-            <a href="{{ url_for('insights.insights') }}" class="sidebar-link">
-                <span class="sidebar-icon">📈</span>
-                Insights
-            </a>
-            <a href="{{ url_for('tasks.task_history') }}" class="sidebar-link">
-                <span class="sidebar-icon">🕒</span>
-                History
-            </a>
-        </nav>
-
-        <div class="sidebar-section-label">Support</div>
-        <nav class="sidebar-nav">
-            <a href="{{ url_for('feedback.submit_feedback') }}" class="sidebar-link">
-                <span class="sidebar-icon">💬</span>
-                Feedback
-            </a>
-            <a href="https://mail.google.com/mail/?view=cm&to=abcd@gmail.com&su=PlanAIr Contact" target="_blank" class="sidebar-link">
-                <span class="sidebar-icon">✉️</span>
-                Contact Us
-            </a>
-        </nav>
-
-        <div class="sidebar-user">
-            <div class="sidebar-user-card">
-                <div class="sidebar-user-avatar">{{ current_user.name[0].upper() }}</div>
-                <div>
-                    <div class="sidebar-user-name">{{ current_user.name.split()[0] }}</div>
-                    <div class="sidebar-user-status">To-Do List</div>
-                </div>
-            </div>
-        </div>
-    </aside>
-
-    <!-- ═══════════════ TODO MAIN ═══════════════ -->
+<!-- ═══════════════ TODO MAIN ═══════════════ -->
     <div class="todo-main">
-
-        <button class="sidebar-toggle" onclick="openSidebar()">☰ &nbsp;Menu</button>
 
         <!-- header -->
         <div class="todo-header">
@@ -895,6 +634,7 @@
         </div>
     </div>
 </div>
+
 
 {% endblock %}
 
@@ -1126,18 +866,6 @@ function escHtml(str) {
     return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ═══════════════════════════════════════════
-// SIDEBAR
-function openSidebar() {
-    document.getElementById('sidebar').classList.add('sidebar-open');
-    document.getElementById('sidebarOverlay').classList.add('active');
-    document.body.style.overflow = 'hidden';
-}
-function closeSidebar() {
-    document.getElementById('sidebar').classList.remove('sidebar-open');
-    document.getElementById('sidebarOverlay').classList.remove('active');
-    document.body.style.overflow = '';
-}
 
 // ═══════════════════════════════════════════
 // KEYBOARD: Enter to add
