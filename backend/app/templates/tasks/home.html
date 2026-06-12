@@ -4,145 +4,264 @@
 
 {% block extra_css %}
 <style>
-/* ── layout ── */
+/* ── break out of page-content padding for full-bleed sections ── */
 .home-main {
-    /* break out of page-content padding so hero/strips are edge-to-edge */
     margin: -2rem -2.5rem 0;
 }
+@media (max-width: 768px) { .home-main { margin: -1.25rem -1rem 0; } }
 
-@media (max-width: 768px) {
-    .home-main { margin: -1.25rem -1rem 0; }
-}
-
-/* ── hero (compact two-column) ── */
+/* ═══════════════════════════════════════════════
+   HERO
+═══════════════════════════════════════════════ */
 .home-hero {
-    background: linear-gradient(135deg, #0f0c29, #1a1560, #302b8a);
-    padding: 2.25rem 3rem;
+    background: linear-gradient(135deg, #0a0818 0%, #0f0c29 40%, #1a1560 80%, #1f1a6e 100%);
+    padding: 3rem 3rem 2.5rem;
     position: relative;
     overflow: hidden;
 }
+
+/* animated dot-grid */
 .home-hero::before {
     content: '';
     position: absolute; inset: 0;
-    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');
-}
-.home-hero::after {
-    content: '';
-    position: absolute; top: -60px; right: -60px;
-    width: 280px; height: 280px;
-    background: radial-gradient(circle, rgba(139,92,246,0.22) 0%, transparent 70%);
+    background-image: radial-gradient(rgba(129,140,248,0.08) 1px, transparent 1px);
+    background-size: 28px 28px;
     pointer-events: none;
 }
-.hero-glow-left {
-    position: absolute; bottom: -40px; left: -40px;
-    width: 220px; height: 220px;
-    background: radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%);
+
+/* ambient glow orbs */
+.hero-orb {
+    position: absolute;
+    border-radius: 50%;
     pointer-events: none;
+    filter: blur(60px);
 }
-/* two columns: greeting left, stats right */
+.hero-orb-1 {
+    width: 340px; height: 340px;
+    top: -100px; right: -60px;
+    background: radial-gradient(circle, rgba(139,92,246,0.25), transparent 70%);
+}
+.hero-orb-2 {
+    width: 260px; height: 260px;
+    bottom: -80px; left: -40px;
+    background: radial-gradient(circle, rgba(99,102,241,0.2), transparent 70%);
+}
+
 .home-hero-inner {
     position: relative; z-index: 1;
-    display: flex; align-items: center;
+    display: flex;
+    align-items: center;
     justify-content: space-between;
-    gap: 2rem; flex-wrap: wrap;
+    gap: 2rem;
+    flex-wrap: wrap;
 }
-.home-hero-left { display: flex; align-items: center; gap: 1rem; flex: 1; min-width: 220px; }
-.home-hero-logo {
-    width: 52px; height: 52px; border-radius: 50%;
-    object-fit: cover; flex-shrink: 0;
-    box-shadow: 0 0 0 3px rgba(255,255,255,0.1), 0 6px 20px rgba(0,0,0,0.3), 0 0 28px rgba(139,92,246,0.28);
+
+/* left: greeting */
+.home-hero-left {
+    display: flex; align-items: center; gap: 1.25rem;
+    flex: 1; min-width: 240px;
 }
+
+.home-hero-avatar {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: linear-gradient(135deg, #818cf8, #a78bfa);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.4rem; font-weight: 800; color: white;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 3px rgba(129,140,248,0.2), 0 0 24px rgba(139,92,246,0.3);
+}
+
 .home-greeting {
-    font-size: 1.55rem; font-weight: 800; color: #fff;
-    margin: 0 0 0.2rem; letter-spacing: -0.02em; line-height: 1.2;
+    font-size: 1.65rem; font-weight: 800; color: #fff;
+    margin: 0 0 0.2rem; letter-spacing: -0.025em; line-height: 1.2;
 }
-.home-greeting span {
-    background: linear-gradient(90deg, #a78bfa, #60a5fa);
+
+.home-greeting-name {
+    background: linear-gradient(90deg, #a78bfa, #818cf8, #60a5fa);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
+
 .home-subtitle {
-    font-size: 0.82rem; color: rgba(255,255,255,0.5);
-    margin: 0; line-height: 1.55; max-width: 360px;
-}
-/* stats pill – right */
-.home-stats {
-    display: flex; align-items: center; gap: 1.25rem;
-    padding: 0.7rem 1.5rem;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 12px; flex-wrap: wrap;
-    justify-content: center; backdrop-filter: blur(8px); flex-shrink: 0;
-}
-.home-stat-num  { display: block; font-size: 1.15rem; font-weight: 700; color: #fff; }
-.home-stat-label { display: block; font-size: 0.62rem; color: rgba(255,255,255,0.45); margin-top: 0.05rem; }
-.home-stat-divider { width: 1px; height: 26px; background: rgba(255,255,255,0.14); }
-@media (max-width: 768px) {
-    .home-hero { padding: 1.75rem 1.25rem; }
-    .home-hero-inner { flex-direction: column; align-items: flex-start; gap: 1.25rem; }
-    .home-greeting { font-size: 1.35rem; }
-    .home-stats { width: 100%; }
+    font-size: 0.83rem; color: rgba(255,255,255,0.45);
+    margin: 0; line-height: 1.6; max-width: 380px;
 }
 
-/* ── body ── */
-.home-body { padding: 2.25rem 3rem; }
+/* right: stat chips */
+.home-stats-row {
+    display: flex; align-items: center; gap: 0.75rem;
+    flex-wrap: wrap; flex-shrink: 0;
+}
+
+.home-stat-chip {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px;
+    padding: 0.65rem 1.1rem;
+    text-align: center;
+    backdrop-filter: blur(8px);
+    min-width: 76px;
+    transition: all 0.2s;
+}
+.home-stat-chip:hover {
+    background: rgba(129,140,248,0.12);
+    border-color: rgba(129,140,248,0.25);
+}
+
+.home-stat-chip-num   { display: block; font-size: 1.35rem; font-weight: 800; color: #fff; line-height: 1; }
+.home-stat-chip-label { display: block; font-size: 0.6rem; color: rgba(255,255,255,0.4); margin-top: 0.2rem; text-transform: uppercase; letter-spacing: 0.06em; }
+
+@media (max-width: 768px) {
+    .home-hero { padding: 2rem 1.25rem 1.75rem; }
+    .home-hero-inner { flex-direction: column; align-items: flex-start; gap: 1.25rem; }
+    .home-greeting { font-size: 1.4rem; }
+    .home-stats-row { width: 100%; }
+    .home-stat-chip { flex: 1; }
+}
+
+/* ═══════════════════════════════════════════════
+   GLOWING DIVIDER
+═══════════════════════════════════════════════ */
+.hero-divider {
+    height: 1px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(129,140,248,0.4) 20%,
+        rgba(167,139,250,0.6) 50%,
+        rgba(129,140,248,0.4) 80%,
+        transparent 100%
+    );
+}
+
+/* ═══════════════════════════════════════════════
+   BODY
+═══════════════════════════════════════════════ */
+.home-body {
+    padding: 2.25rem 3rem;
+    background: var(--bg);
+}
 @media (max-width: 768px) { .home-body { padding: 1.5rem 1.25rem; } }
 
-.home-section-label {
-    font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
-    letter-spacing: 0.1em; color: var(--text-muted);
+/* section label */
+.section-eyebrow {
+    font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.12em; color: var(--text-muted);
     margin-bottom: 1.1rem;
-    display: flex; align-items: center; gap: 0.6rem;
+    display: flex; align-items: center; gap: 0.65rem;
 }
-.home-section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.section-eyebrow::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+}
 
 /* ── mode cards ── */
-.mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; margin-bottom: 2.25rem; }
-@media (max-width: 600px) { .mode-grid { grid-template-columns: 1fr; } }
+.mode-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+}
+@media (max-width: 640px) { .mode-grid { grid-template-columns: 1fr; } }
 
 .mode-card {
-    background: var(--grad-card); border: 1px solid var(--border);
-    border-radius: var(--radius-xl); padding: 1.75rem;
+    background: var(--grad-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 1.75rem;
     text-decoration: none; color: var(--text);
-    display: flex; flex-direction: column; gap: 0.8rem;
-    box-shadow: var(--shadow-sm); transition: all 0.25s;
-    position: relative; overflow: hidden; cursor: pointer;
+    display: flex; flex-direction: column; gap: 0.9rem;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.25s;
+    position: relative; overflow: hidden;
+    cursor: pointer;
 }
+
+/* top glow line */
 .mode-card::before {
-    content: ''; position: absolute; top: 0; left: 15%; right: 15%; height: 1px;
+    content: ''; position: absolute;
+    top: 0; left: 20%; right: 20%; height: 1px;
     background: linear-gradient(90deg, transparent, var(--mc-color, rgba(129,140,248,0.4)), transparent);
+    transition: opacity 0.25s;
 }
+
+/* side accent strip */
+.mode-card::after {
+    content: ''; position: absolute;
+    left: 0; top: 20%; bottom: 20%; width: 3px;
+    background: var(--mc-color, rgba(129,140,248,0.4));
+    border-radius: 0 3px 3px 0;
+    opacity: 0; transition: opacity 0.25s;
+}
+
 .mode-card:hover {
     transform: translateY(-4px);
-    box-shadow: var(--shadow-lg), 0 0 36px var(--mc-glow, rgba(129,140,248,0.12));
+    box-shadow: var(--shadow-lg), 0 0 40px var(--mc-glow, rgba(129,140,248,0.1));
     border-color: var(--mc-border, rgba(129,140,248,0.3));
     text-decoration: none; color: var(--text);
 }
-.mode-card--planner { --mc-color: rgba(129,140,248,0.5); --mc-border: rgba(129,140,248,0.35); --mc-glow: rgba(129,140,248,0.15); }
-.mode-card--todo    { --mc-color: rgba(52,211,153,0.5);  --mc-border: rgba(52,211,153,0.35);  --mc-glow: rgba(52,211,153,0.12); }
+.mode-card:hover::after { opacity: 1; }
 
-.mode-icon { width: 48px; height: 48px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; flex-shrink: 0; }
-.mode-icon--planner { background: rgba(129,140,248,0.15); border: 1px solid rgba(129,140,248,0.25); }
-.mode-icon--todo    { background: rgba(52,211,153,0.15);  border: 1px solid rgba(52,211,153,0.25); }
-.mode-card h3 { font-size: 1.05rem; font-weight: 700; margin: 0; }
-.mode-card p  { font-size: 0.83rem; color: var(--text-muted); line-height: 1.6; margin: 0; flex: 1; }
+.mode-card--planner {
+    --mc-color: rgba(129,140,248,0.55);
+    --mc-border: rgba(129,140,248,0.3);
+    --mc-glow: rgba(129,140,248,0.12);
+}
+.mode-card--todo {
+    --mc-color: rgba(52,211,153,0.55);
+    --mc-border: rgba(52,211,153,0.3);
+    --mc-glow: rgba(52,211,153,0.1);
+}
 
-.mode-features { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.2rem; }
-.mode-feature  { display: flex; align-items: center; gap: 0.45rem; font-size: 0.78rem; color: var(--text-muted); }
-.mode-feature-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
-.dot--planner { background: #818cf8; box-shadow: 0 0 5px rgba(129,140,248,0.6); }
-.dot--todo    { background: #34d399; box-shadow: 0 0 5px rgba(52,211,153,0.6); }
+.mode-card-head { display: flex; align-items: center; gap: 0.85rem; }
+
+.mode-icon {
+    width: 46px; height: 46px; border-radius: 13px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.35rem; flex-shrink: 0;
+    transition: transform 0.25s;
+}
+.mode-card:hover .mode-icon { transform: scale(1.08); }
+
+.mode-icon--planner { background: rgba(129,140,248,0.12); border: 1px solid rgba(129,140,248,0.22); }
+.mode-icon--todo    { background: rgba(52,211,153,0.12);  border: 1px solid rgba(52,211,153,0.22); }
+
+.mode-card-title   { font-size: 1.05rem; font-weight: 700; margin: 0; }
+.mode-card-tagline { font-size: 0.75rem; color: var(--text-muted); margin: 0; line-height: 1.4; }
+
+.mode-card-desc {
+    font-size: 0.83rem; color: var(--text-muted);
+    line-height: 1.65; margin: 0; flex: 1;
+}
+
+.mode-features { display: flex; flex-direction: column; gap: 0.32rem; }
+.mode-feature  {
+    display: flex; align-items: center; gap: 0.5rem;
+    font-size: 0.79rem; color: var(--text-muted);
+}
+.mode-feature-dot {
+    width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0;
+}
+.dot--planner { background: #818cf8; box-shadow: 0 0 6px rgba(129,140,248,0.7); }
+.dot--todo    { background: #34d399; box-shadow: 0 0 6px rgba(52,211,153,0.7); }
 
 .mode-cta {
-    display: inline-flex; align-items: center; gap: 0.35rem;
-    font-size: 0.8rem; font-weight: 700; margin-top: 0.2rem;
-    padding: 0.45rem 0.9rem; border-radius: 8px; width: fit-content; transition: all 0.18s;
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    font-size: 0.79rem; font-weight: 700;
+    padding: 0.45rem 0.95rem; border-radius: 9px;
+    width: fit-content; transition: all 0.18s; margin-top: 0.1rem;
 }
-.mode-cta--planner { background: rgba(129,140,248,0.12); color: #818cf8; border: 1px solid rgba(129,140,248,0.25); }
-.mode-cta--todo    { background: rgba(52,211,153,0.12);  color: #34d399;  border: 1px solid rgba(52,211,153,0.25); }
-.mode-card:hover .mode-cta--planner { background: rgba(129,140,248,0.22); }
-.mode-card:hover .mode-cta--todo    { background: rgba(52,211,153,0.22); }
+.mode-cta--planner {
+    background: rgba(129,140,248,0.1); color: #818cf8;
+    border: 1px solid rgba(129,140,248,0.22);
+}
+.mode-cta--todo {
+    background: rgba(52,211,153,0.1); color: #34d399;
+    border: 1px solid rgba(52,211,153,0.22);
+}
+.mode-card:hover .mode-cta--planner { background: rgba(129,140,248,0.2); }
+.mode-card:hover .mode-cta--todo    { background: rgba(52,211,153,0.2); }
 
-/* ── features strip ── */
+/* ═══════════════════════════════════════════════
+   FEATURE STRIP
+═══════════════════════════════════════════════ */
 .features-strip {
     background: var(--bg-secondary);
     border-top: 1px solid var(--border);
@@ -151,149 +270,253 @@
 }
 @media (max-width: 768px) { .features-strip { padding: 1.75rem 1.25rem; } }
 
-.features-strip-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1rem; }
-.fs-card { display: flex; align-items: flex-start; gap: 0.7rem; }
-.fs-icon { font-size: 1.1rem; width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.fs-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.15rem; }
-.fs-desc  { font-size: 0.76rem; color: var(--text-muted); line-height: 1.5; }
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+    gap: 1.25rem;
+}
 
-/* ── contact CTA ── */
-.contact-section {
-    background: linear-gradient(135deg, #0f0c29, #1a1560, #302b8a);
-    padding: 2.75rem 3rem; text-align: center; position: relative; overflow: hidden;
+.fs-card {
+    display: flex; align-items: flex-start; gap: 0.75rem;
+    padding: 1rem 1rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    transition: all 0.2s;
 }
-@media (max-width: 768px) { .contact-section { padding: 2rem 1.25rem; } }
-.contact-section::before {
-    content: ''; position: absolute; inset: 0;
-    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');
+.fs-card:hover {
+    border-color: rgba(129,140,248,0.25);
+    box-shadow: var(--shadow-sm), 0 0 18px rgba(129,140,248,0.07);
+    transform: translateY(-2px);
 }
-.contact-inner { position: relative; z-index: 1; max-width: 480px; margin: 0 auto; }
-.contact-inner h2 { font-size: 1.5rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem; }
-.contact-inner p  { color: rgba(255,255,255,0.55); font-size: 0.875rem; margin-bottom: 1.5rem; line-height: 1.7; }
-.contact-actions  { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
-.btn-contact-primary {
-    background: white; color: #312e81; padding: 0.65rem 1.6rem;
-    border-radius: 10px; font-size: 0.875rem; font-weight: 700; border: none;
-    cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
-    text-decoration: none; display: inline-block;
+
+.fs-icon {
+    width: 36px; height: 36px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem; flex-shrink: 0;
 }
-.btn-contact-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,0.2); text-decoration: none; color: #312e81; }
-.btn-contact-secondary {
-    background: rgba(255,255,255,0.1); color: white; padding: 0.65rem 1.6rem;
-    border-radius: 10px; font-size: 0.875rem; font-weight: 500;
-    border: 1px solid rgba(255,255,255,0.2); cursor: pointer;
-    transition: background 0.15s; text-decoration: none; display: inline-block; backdrop-filter: blur(4px);
+.fs-title { font-size: 0.84rem; font-weight: 700; margin-bottom: 0.2rem; }
+.fs-desc  { font-size: 0.76rem; color: var(--text-muted); line-height: 1.55; }
+
+/* ═══════════════════════════════════════════════
+   CONTACT CTA
+═══════════════════════════════════════════════ */
+.home-cta {
+    background: linear-gradient(135deg, #0a0818 0%, #0f0c29 45%, #1a1560 100%);
+    padding: 3rem 3rem;
+    text-align: center;
+    position: relative; overflow: hidden;
 }
-.btn-contact-secondary:hover { background: rgba(255,255,255,0.18); text-decoration: none; color: white; }
+@media (max-width: 768px) { .home-cta { padding: 2.25rem 1.25rem; } }
+
+.home-cta::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image: radial-gradient(rgba(129,140,248,0.06) 1px, transparent 1px);
+    background-size: 28px 28px;
+}
+
+.home-cta-orb {
+    position: absolute; border-radius: 50%; pointer-events: none; filter: blur(50px);
+    width: 240px; height: 240px;
+    top: -80px; left: 50%; transform: translateX(-50%);
+    background: radial-gradient(circle, rgba(139,92,246,0.22), transparent 70%);
+}
+
+.home-cta-inner { position: relative; z-index: 1; max-width: 500px; margin: 0 auto; }
+
+.home-cta-badge {
+    display: inline-block;
+    background: rgba(129,140,248,0.12);
+    color: #a5b4fc;
+    border: 1px solid rgba(129,140,248,0.22);
+    border-radius: 99px;
+    font-size: 0.72rem; font-weight: 700;
+    padding: 0.25rem 0.85rem;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    margin-bottom: 1rem;
+}
+
+.home-cta h2 {
+    font-size: 1.6rem; font-weight: 800; color: #fff;
+    margin-bottom: 0.5rem; letter-spacing: -0.02em;
+}
+
+.home-cta p {
+    color: rgba(255,255,255,0.5); font-size: 0.875rem;
+    margin-bottom: 1.75rem; line-height: 1.7;
+}
+
+.home-cta-actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+
+.btn-cta-primary {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff; padding: 0.7rem 1.75rem;
+    border-radius: 10px; font-size: 0.875rem; font-weight: 700;
+    border: none; cursor: pointer;
+    transition: all 0.2s; text-decoration: none;
+    box-shadow: 0 4px 16px rgba(99,102,241,0.35);
+}
+.btn-cta-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(99,102,241,0.45), 0 0 40px rgba(139,92,246,0.2);
+    text-decoration: none; color: #fff;
+}
+
+.btn-cta-secondary {
+    background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.8);
+    padding: 0.7rem 1.75rem; border-radius: 10px;
+    font-size: 0.875rem; font-weight: 500;
+    border: 1px solid rgba(255,255,255,0.15); cursor: pointer;
+    transition: all 0.18s; text-decoration: none; backdrop-filter: blur(4px);
+}
+.btn-cta-secondary:hover {
+    background: rgba(255,255,255,0.13);
+    text-decoration: none; color: #fff;
+}
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="home-main">
 
-    <!-- hero: compact two-column -->
+    <!-- ── Hero ── -->
     <div class="home-hero">
-        <div class="hero-glow-left"></div>
+        <div class="hero-orb hero-orb-1"></div>
+        <div class="hero-orb hero-orb-2"></div>
         <div class="home-hero-inner">
             <div class="home-hero-left">
-                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="PlanAIr" class="home-hero-logo">
+                <div class="home-hero-avatar">{{ current_user.name[0].upper() }}</div>
                 <div>
-                    <h1 class="home-greeting">Welcome back, <span>{{ current_user.name.split()[0] }}</span></h1>
+                    <h1 class="home-greeting">
+                        Welcome back,
+                        <span class="home-greeting-name">{{ current_user.name.split()[0] }}</span>
+                    </h1>
                     <p class="home-subtitle">Intelligent scheduling that adapts to your mood and helps you focus on what matters.</p>
                 </div>
             </div>
-            <div class="home-stats">
-                <div class="home-stat">
-                    <span class="home-stat-num">{{ total_users }}</span>
-                    <span class="home-stat-label">Users planning</span>
+
+            <div class="home-stats-row">
+                <div class="home-stat-chip">
+                    <span class="home-stat-chip-num">{{ total_users }}</span>
+                    <span class="home-stat-chip-label">Users</span>
                 </div>
-                <div class="home-stat-divider"></div>
-                <div class="home-stat">
-                    <span class="home-stat-num">{{ total_tasks }}</span>
-                    <span class="home-stat-label">Tasks created</span>
+                <div class="home-stat-chip">
+                    <span class="home-stat-chip-num">{{ total_tasks }}</span>
+                    <span class="home-stat-chip-label">Tasks</span>
                 </div>
-                <div class="home-stat-divider"></div>
-                <div class="home-stat">
-                    <span class="home-stat-num">{{ total_sessions }}</span>
-                    <span class="home-stat-label">Sessions done</span>
+                <div class="home-stat-chip">
+                    <span class="home-stat-chip-num">{{ total_sessions }}</span>
+                    <span class="home-stat-chip-label">Sessions</span>
                 </div>
-                <div class="home-stat-divider"></div>
-                <div class="home-stat">
-                    <span class="home-stat-num">{{ streak }}</span>
-                    <span class="home-stat-label">Day streak 🔥</span>
+                <div class="home-stat-chip">
+                    <span class="home-stat-chip-num">{{ streak }}🔥</span>
+                    <span class="home-stat-chip-label">Streak</span>
                 </div>
             </div>
         </div>
     </div>
+    <div class="hero-divider"></div>
 
-    <!-- body -->
+    <!-- ── Body ── -->
     <div class="home-body">
-        <div class="home-section-label">Choose your tool</div>
+        <div class="section-eyebrow">Choose your tool</div>
 
         <div class="mode-grid">
+
+            <!-- Smart Planner card -->
             <a href="{{ url_for('tasks.dashboard') }}" class="mode-card mode-card--planner">
-                <div class="mode-icon mode-icon--planner">🧠</div>
-                <h3>Smart Planner</h3>
-                <p>Eisenhower matrix, auto-scheduling across your free time, mood-aware planning, and detailed productivity insights.</p>
+                <div class="mode-card-head">
+                    <div class="mode-icon mode-icon--planner">🧠</div>
+                    <div>
+                        <div class="mode-card-title">Smart Planner</div>
+                        <div class="mode-card-tagline">AI-powered scheduling</div>
+                    </div>
+                </div>
+                <p class="mode-card-desc">Eisenhower matrix, auto-scheduling across your free time, mood-aware planning, and detailed productivity insights.</p>
                 <div class="mode-features">
-                    <div class="mode-feature"><span class="mode-feature-dot dot--planner"></span>Eisenhower Matrix</div>
+                    <div class="mode-feature"><span class="mode-feature-dot dot--planner"></span>Eisenhower Matrix prioritisation</div>
                     <div class="mode-feature"><span class="mode-feature-dot dot--planner"></span>Auto schedule generation</div>
                     <div class="mode-feature"><span class="mode-feature-dot dot--planner"></span>Mood &amp; streak tracking</div>
-                    <div class="mode-feature"><span class="mode-feature-dot dot--planner"></span>Productivity insights</div>
+                    <div class="mode-feature"><span class="mode-feature-dot dot--planner"></span>Productivity insights &amp; charts</div>
                 </div>
                 <div class="mode-cta mode-cta--planner">Open Smart Planner →</div>
             </a>
 
+            <!-- To-Do card -->
             <a href="{{ url_for('tasks.todo') }}" class="mode-card mode-card--todo">
-                <div class="mode-icon mode-icon--todo">✅</div>
-                <h3>Smart To-Do List</h3>
-                <p>A fast, lightweight to-do list with priorities, quick capture, and filtering — no scheduling required.</p>
+                <div class="mode-card-head">
+                    <div class="mode-icon mode-icon--todo">✅</div>
+                    <div>
+                        <div class="mode-card-title">Smart To-Do List</div>
+                        <div class="mode-card-tagline">Fast, lightweight capture</div>
+                    </div>
+                </div>
+                <p class="mode-card-desc">A fast, lightweight to-do list with priorities, quick capture, and filtering — no scheduling required.</p>
                 <div class="mode-features">
-                    <div class="mode-feature"><span class="mode-feature-dot dot--todo"></span>Quick task capture</div>
-                    <div class="mode-feature"><span class="mode-feature-dot dot--todo"></span>Priority sorting</div>
-                    <div class="mode-feature"><span class="mode-feature-dot dot--todo"></span>Filter by status &amp; priority</div>
-                    <div class="mode-feature"><span class="mode-feature-dot dot--todo"></span>Local, instant, no scheduling</div>
+                    <div class="mode-feature"><span class="mode-feature-dot dot--todo"></span>Instant task capture</div>
+                    <div class="mode-feature"><span class="mode-feature-dot dot--todo"></span>Priority sorting &amp; filters</div>
+                    <div class="mode-feature"><span class="mode-feature-dot dot--todo"></span>Due date tracking</div>
+                    <div class="mode-feature"><span class="mode-feature-dot dot--todo"></span>Persisted locally, zero lag</div>
                 </div>
                 <div class="mode-cta mode-cta--todo">Open To-Do List →</div>
             </a>
+
         </div>
     </div>
 
-    <!-- features strip -->
+    <!-- ── Feature strip ── -->
     <div class="features-strip">
-        <div class="home-section-label" style="margin-bottom:1.1rem;">What's inside</div>
-        <div class="features-strip-grid">
+        <div class="section-eyebrow" style="margin-bottom:1.25rem;">What's inside</div>
+        <div class="features-grid">
             <div class="fs-card">
-                <div class="fs-icon" style="background:rgba(239,68,68,0.12);">⚠️</div>
-                <div><div class="fs-title">Eisenhower Matrix</div><div class="fs-desc">Tasks auto-sorted by urgency and importance.</div></div>
+                <div class="fs-icon" style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.15);">⚠️</div>
+                <div>
+                    <div class="fs-title">Eisenhower Matrix</div>
+                    <div class="fs-desc">Tasks auto-sorted by urgency and importance into four quadrants.</div>
+                </div>
             </div>
             <div class="fs-card">
-                <div class="fs-icon" style="background:rgba(59,130,246,0.12);">🕐</div>
-                <div><div class="fs-title">Smart Scheduling</div><div class="fs-desc">Work distributed across your free hours only.</div></div>
+                <div class="fs-icon" style="background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.15);">🕐</div>
+                <div>
+                    <div class="fs-title">Smart Scheduling</div>
+                    <div class="fs-desc">Work distributed across your free hours — never your busy blocks.</div>
+                </div>
             </div>
             <div class="fs-card">
-                <div class="fs-icon" style="background:rgba(139,92,246,0.12);">💜</div>
-                <div><div class="fs-title">Mood-Aware</div><div class="fs-desc">Sessions lighten automatically when you're low.</div></div>
+                <div class="fs-icon" style="background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.15);">💜</div>
+                <div>
+                    <div class="fs-title">Mood-Aware</div>
+                    <div class="fs-desc">Sessions lighten automatically when you're having a rough day.</div>
+                </div>
             </div>
             <div class="fs-card">
-                <div class="fs-icon" style="background:rgba(16,185,129,0.12);">📊</div>
-                <div><div class="fs-title">Productivity Insights</div><div class="fs-desc">Weekly trends, heatmaps, and workload charts.</div></div>
+                <div class="fs-icon" style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.15);">📊</div>
+                <div>
+                    <div class="fs-title">Productivity Insights</div>
+                    <div class="fs-desc">Weekly trends, heatmaps, and completion charts.</div>
+                </div>
             </div>
             <div class="fs-card">
-                <div class="fs-icon" style="background:rgba(245,158,11,0.12);">🔥</div>
-                <div><div class="fs-title">Streak Tracking</div><div class="fs-desc">Daily streaks with milestone celebrations.</div></div>
+                <div class="fs-icon" style="background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.15);">🔥</div>
+                <div>
+                    <div class="fs-title">Streak Tracking</div>
+                    <div class="fs-desc">Daily streaks with milestone celebrations to keep you going.</div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- contact CTA -->
-    <div class="contact-section">
-        <div class="contact-inner">
+    <!-- ── CTA ── -->
+    <div class="home-cta">
+        <div class="home-cta-orb"></div>
+        <div class="home-cta-inner">
+            <div class="home-cta-badge">💬 We read every submission</div>
             <h2>Have feedback or ideas?</h2>
-            <p>PlanAIr is actively improving. Tell us what you'd like to see next — we read every submission.</p>
-            <div class="contact-actions">
-                <a href="{{ url_for('feedback.submit_feedback') }}" class="btn-contact-primary">Share feedback →</a>
-                <a href="https://mail.google.com/mail/?view=cm&to=abcd@gmail.com&su=PlanAIr Contact" target="_blank" class="btn-contact-secondary">Contact us</a>
+            <p>PlanAIr is actively improving. Tell us what you'd like to see next.</p>
+            <div class="home-cta-actions">
+                <a href="{{ url_for('feedback.submit_feedback') }}" class="btn-cta-primary">Share feedback →</a>
+                <a href="https://mail.google.com/mail/?view=cm&to=abcd@gmail.com&su=PlanAIr Contact" target="_blank" class="btn-cta-secondary">Contact us</a>
             </div>
         </div>
     </div>
