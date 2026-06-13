@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% set active_page = 'schedule' %}
-{% block title %}{% if is_edit %}Edit Schedule{% else %}Set Your Schedule{% endif %} — PlanAIr{% endblock %}
+{% block title %}{% if is_edit %}Edit Schedule{% else %}Set Your Schedule{% endif %}: PlanAIr{% endblock %}
 
 {% block content %}
 <div class="setup-container">
     <div class="setup-header">
         <h2>{% if is_edit %}Edit your schedule{% else %}When are you available?{% endif %}</h2>
         <p class="text-muted">
-            Click and drag on the grid to mark your <strong>free hours</strong> — highlighted in purple.
+            Click and drag on the grid to mark your <strong>free hours</strong>, highlighted in purple.
             PlanAIr will only schedule tasks during your free time.
         </p>
     </div>
@@ -88,7 +88,7 @@
     }
 
     function updateHiddenInput() {
-        // Send busy hours (non-free slots) to the backend — same format as before
+        // Send busy hours (non-free slots) to the backend, same format as before
         const blocks = [];
         ALL_DAYS.forEach(day => {
             ALL_HOURS.forEach(hour => {
@@ -108,7 +108,7 @@
 
     function loadExisting() {
         if (existingBusyData.length === 0) {
-            // Brand-new user: start ALL grey (busy) — user drags to mark free hours.
+            // Brand-new user: start ALL grey (busy), user drags to mark free hours.
             // Clear the freeSlots set so nothing is purple by default.
             freeSlots.clear();
         } else {

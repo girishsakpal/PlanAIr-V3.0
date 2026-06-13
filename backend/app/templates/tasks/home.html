@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% set active_page = 'home' %}
-{% block title %}Home — PlanAIr{% endblock %}
+{% block title %}Home: PlanAIr{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -9,6 +9,13 @@
     margin: -2rem -2.5rem 0;
 }
 @media (max-width: 768px) { .home-main { margin: -1.25rem -1rem 0; } }
+
+/* navbar wrapper stays in normal flow */
+.home-main .home-nav-wrap {
+    padding: 1.25rem 3rem 0;
+    background: var(--bg);
+}
+@media (max-width: 768px) { .home-main .home-nav-wrap { padding: 1rem 1.25rem 0; } }
 
 /* ═══════════════════════════════════════════════
    HERO
@@ -380,6 +387,22 @@
 {% block content %}
 <div class="home-main">
 
+    <!-- ── Page Navbar ── -->
+    <div class="home-nav-wrap">
+        <nav class="page-navbar">
+            <a href="{{ url_for('tasks.home') }}" class="page-nav-link active">
+                <span class="nav-icon">🏠</span><span class="nav-label">Home</span>
+            </a>
+            <div class="page-nav-sep"></div>
+            <a href="{{ url_for('tasks.dashboard') }}" class="page-nav-link">
+                <span class="nav-icon">🧠</span><span class="nav-label">Smart Planner</span>
+            </a>
+            <a href="{{ url_for('tasks.todo') }}" class="page-nav-link todo-link">
+                <span class="nav-icon">✅</span><span class="nav-label">To-Do List</span>
+            </a>
+        </nav>
+    </div>
+
     <!-- ── Hero ── -->
     <div class="home-hero">
         <div class="hero-orb hero-orb-1"></div>
@@ -452,7 +475,7 @@
                         <div class="mode-card-tagline">Fast, lightweight capture</div>
                     </div>
                 </div>
-                <p class="mode-card-desc">A fast, lightweight to-do list with priorities, quick capture, and filtering — no scheduling required.</p>
+                <p class="mode-card-desc">A fast, lightweight to-do list with priorities, quick capture, and filtering. No scheduling required.</p>
                 <div class="mode-features">
                     <div class="mode-feature"><span class="mode-feature-dot dot--todo"></span>Instant task capture</div>
                     <div class="mode-feature"><span class="mode-feature-dot dot--todo"></span>Priority sorting &amp; filters</div>
@@ -480,7 +503,7 @@
                 <div class="fs-icon" style="background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.15);">🕐</div>
                 <div>
                     <div class="fs-title">Smart Scheduling</div>
-                    <div class="fs-desc">Work distributed across your free hours — never your busy blocks.</div>
+                    <div class="fs-desc">Work distributed across your free hours, never your busy blocks.</div>
                 </div>
             </div>
             <div class="fs-card">
@@ -516,7 +539,7 @@
             <p>PlanAIr is actively improving. Tell us what you'd like to see next.</p>
             <div class="home-cta-actions">
                 <a href="{{ url_for('feedback.submit_feedback') }}" class="btn-cta-primary">Share feedback →</a>
-                <a href="https://mail.google.com/mail/?view=cm&to=abcd@gmail.com&su=PlanAIr Contact" target="_blank" class="btn-cta-secondary">Contact us</a>
+                <a href="https://mail.google.com/mail/?view=cm&to=girishdsakpal@gmail.com&su=PlanAIr Contact" target="_blank" class="btn-cta-secondary">Contact us</a>
             </div>
         </div>
     </div>

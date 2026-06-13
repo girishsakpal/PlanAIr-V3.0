@@ -1,8 +1,34 @@
 {% extends "base.html" %}
 {% set active_page = 'schedule' %}
-{% block title %}Schedule — PlanAIr{% endblock %}
+{% block title %}Schedule: PlanAIr{% endblock %}
 
 {% block content %}
+<!-- ── Page Navbar ── -->
+<nav class="page-navbar" style="margin-bottom:1.75rem;">
+    <a href="{{ url_for('tasks.home') }}" class="page-nav-link home-link">
+        <span class="nav-icon">🏠</span><span class="nav-label">Home</span>
+    </a>
+    <a href="{{ url_for('tasks.todo') }}" class="page-nav-link todo-link">
+        <span class="nav-icon">✅</span><span class="nav-label">To-Do</span>
+    </a>
+    <div class="page-nav-sep"></div>
+    <a href="{{ url_for('tasks.dashboard') }}" class="page-nav-link">
+        <span class="nav-icon">🧠</span><span class="nav-label">Planner</span>
+    </a>
+    <a href="{{ url_for('schedule.schedule_view') }}" class="page-nav-link active">
+        <span class="nav-icon">📅</span><span class="nav-label">Today</span>
+    </a>
+    <a href="{{ url_for('schedule.week_view') }}" class="page-nav-link">
+        <span class="nav-icon">🗓</span><span class="nav-label">Week</span>
+    </a>
+    <a href="{{ url_for('insights.insights') }}" class="page-nav-link">
+        <span class="nav-icon">📈</span><span class="nav-label">Insights</span>
+    </a>
+    <a href="{{ url_for('tasks.task_history') }}" class="page-nav-link">
+        <span class="nav-icon">🕒</span><span class="nav-label">History</span>
+    </a>
+</nav>
+
 <div class="schedule-header">
     <div class="date-nav">
         <a href="{{ url_for('schedule.schedule_view', date=prev_date) }}" class="btn btn-outline btn-sm">← Prev</a>
@@ -63,7 +89,7 @@
                 </div>
                 <div class="session-complete-wrap">
                     {% if s.is_completed %}
-                    <!-- already completed — show logged info + undo button -->
+                    <!-- already completed, show logged info + undo button -->
                     <div class="session-logged" id="logged-{{ s.id }}">
                         <span class="logged-hours-text">
                             {{ s.logged_hours }}h logged
@@ -73,7 +99,7 @@
                         </button>
                     </div>
                     {% else %}
-                    <!-- not yet completed — show edit + action buttons -->
+                    <!-- not yet completed, show edit + action buttons -->
                     <div class="session-actions">
                         <button class="btn-edit-session" title="Move or resize this session"
                             onclick="openEditModal(
@@ -159,7 +185,7 @@
 
         <!-- live end-time preview -->
         <p class="text-muted text-sm" style="margin-bottom:1rem">
-            End time: <strong id="edit-end-preview">—</strong>
+            End time: <strong id="edit-end-preview">:</strong>
         </p>
 
         <div id="edit-error" style="display:none;color:#ef4444;font-size:0.83rem;margin-bottom:0.75rem"></div>
@@ -169,7 +195,7 @@
             <button class="btn btn-danger" style="flex:1" onclick="confirmDeleteSession()">Remove session</button>
         </div>
         <p class="text-muted text-sm" style="margin-top:0.6rem;font-size:0.76rem">
-            "Remove session" only removes this time-slot — the task stays in your list.
+            "Remove session" only removes this time-slot, the task stays in your list.
         </p>
     </div>
 </div>
@@ -445,7 +471,7 @@
                 showEditError(data.error);
                 return;
             }
-            // if the moved session is still on the currently viewed date — update in place
+            // if the moved session is still on the currently viewed date, update in place
             const currentDate = window.location.search.match(/date=([0-9-]+)/)?.[1]
                              || new Date().toISOString().slice(0,10);
             if (data.date === currentDate) {
@@ -456,7 +482,7 @@
                 }
                 closeEditModal();
             } else {
-                // session moved to another day — reload so it disappears from this view
+                // session moved to another day, reload so it disappears from this view
                 closeEditModal();
                 window.location.reload();
             }

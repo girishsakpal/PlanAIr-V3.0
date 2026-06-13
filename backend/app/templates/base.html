@@ -37,18 +37,23 @@
         {# ══════════ SIDEBAR ══════════ #}
         <aside class="sidebar" id="sidebar">
 
-            {# Close button (desktop + mobile) #}
-            <button class="sidebar-close-btn" onclick="closeSidebar()" aria-label="Close sidebar">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                </svg>
-            </button>
-
+            {# Brand row + close button #}
             <div class="sidebar-brand">
                 <img src="{{ url_for('static', filename='images/logo.png') }}" alt="PlanAIr" class="sidebar-brand-logo">
-                <div>
+                <div class="sidebar-brand-text">
                     <div class="sidebar-brand-name">PlanAIr</div>
                     <div class="sidebar-brand-version">v3.0</div>
+                </div>
+                <div class="sidebar-brand-actions">
+                    <button class="sidebar-dm-btn" onclick="toggleDarkMode()" title="Toggle dark mode">
+                        <span class="icon-sun">☀</span>
+                        <span class="icon-moon">☾</span>
+                    </button>
+                    <button class="sidebar-close-btn" onclick="closeSidebar()" aria-label="Close sidebar">
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                            <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
 
@@ -91,11 +96,15 @@
 
             <div class="sidebar-section-label">Support</div>
             <nav class="sidebar-nav">
+                <a href="{{ url_for('schedule.busy_hours_setup') }}"
+                   class="sidebar-link{% if active_page == 'busy_hours' %} active{% endif %}">
+                    <span class="sidebar-icon">🕐</span>Edit Busy Hours
+                </a>
                 <a href="{{ url_for('feedback.submit_feedback') }}"
                    class="sidebar-link{% if active_page == 'feedback' %} active{% endif %}">
                     <span class="sidebar-icon">💬</span>Feedback
                 </a>
-                <a href="https://mail.google.com/mail/?view=cm&to=abcd@gmail.com&su=PlanAIr Contact"
+                <a href="https://mail.google.com/mail/?view=cm&to=girishdsakpal@gmail.com&su=PlanAIr Contact"
                    target="_blank" class="sidebar-link">
                     <span class="sidebar-icon">✉️</span>Contact Us
                 </a>
@@ -105,7 +114,7 @@
                 <div class="sidebar-user-card">
                     <div class="sidebar-user-avatar">{{ current_user.name[0].upper() }}</div>
                     <div class="sidebar-user-info">
-                        <div class="sidebar-user-name">{{ current_user.name.split()[0] }}</div>
+                        <div class="sidebar-user-name">{{ current_user.name }}</div>
                         <div class="sidebar-user-status">
                             {%- if streak is defined and streak is not none and streak > 0 -%}
                                 🔥 {{ streak }}-day streak
@@ -126,48 +135,15 @@
             </div>
         </aside>
 
-        {# ══════════ MAIN AREA: topbar + content ══════════ #}
+        {# ══════════ MAIN AREA (no topbar) ══════════ #}
         <div class="main-area" id="mainArea">
 
-            {# ── slim topbar ── #}
-            <header class="topbar">
-                <button class="topbar-menu-btn" onclick="openSidebar()" id="menuBtn" aria-label="Open menu">
-                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M2 4h14M2 9h14M2 14h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-                    </svg>
-                    <span>Menu</span>
-                </button>
-
-                <div class="topbar-breadcrumb">
-                    {% block breadcrumb %}{% endblock %}
-                </div>
-
-                <div class="topbar-actions">
-                    <button class="topbar-icon-btn dark-mode-toggle" onclick="toggleDarkMode()" title="Toggle dark mode">
-                        <span class="icon-sun">☀</span>
-                        <span class="icon-moon">☾</span>
-                    </button>
-
-                    <div class="topbar-profile-wrap">
-                        <button class="topbar-profile-btn" onclick="toggleTopbarProfileMenu()" id="topbarProfileBtn">
-                            <span class="topbar-avatar">{{ current_user.name[0].upper() }}</span>
-                            <span class="topbar-name">{{ current_user.name.split()[0] }}</span>
-                            <svg class="topbar-caret" width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </button>
-                        <div class="topbar-profile-menu" id="topbarProfileMenu">
-                            <a href="{{ url_for('schedule.busy_hours_setup') }}" class="profile-menu-item">
-                                🕐 Edit busy hours
-                            </a>
-                            <div class="profile-menu-divider"></div>
-                            <a href="{{ url_for('auth.logout') }}" class="profile-menu-item profile-menu-item--danger">
-                                → Log out
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </header>
+            {# ── floating menu button, only visible when sidebar is closed ── #}
+            <button class="floating-menu-btn" onclick="openSidebar()" id="menuBtn" aria-label="Open menu">
+                <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+                    <path d="M2 4h14M2 9h14M2 14h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                </svg>
+            </button>
 
             {# ── page content ── #}
             <main class="page-content">
@@ -188,60 +164,42 @@
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% if current_user.is_authenticated %}
     <script>
-    // ── Sidebar state ──
     const SIDEBAR_KEY = 'planair_sidebar_open';
 
     function isMobile() { return window.innerWidth <= 768; }
 
     function openSidebar() {
-        const sidebar  = document.getElementById('sidebar');
-        const shell    = document.getElementById('appShell');
-        const overlay  = document.getElementById('sidebarOverlay');
-        const menuBtn  = document.getElementById('menuBtn');
+        const sidebar = document.getElementById('sidebar');
+        const shell   = document.getElementById('appShell');
+        const overlay = document.getElementById('sidebarOverlay');
+        const menuBtn = document.getElementById('menuBtn');
         sidebar.classList.add('sidebar-open');
         shell.classList.add('sidebar-is-open');
         if (isMobile()) {
             overlay.classList.add('active');
             document.body.style.overflow = 'hidden';
         }
-        menuBtn.style.display = 'none';
+        if (menuBtn) { menuBtn.style.opacity = '0'; menuBtn.style.pointerEvents = 'none'; }
         if (!isMobile()) localStorage.setItem(SIDEBAR_KEY, '1');
     }
 
     function closeSidebar() {
-        const sidebar  = document.getElementById('sidebar');
-        const shell    = document.getElementById('appShell');
-        const overlay  = document.getElementById('sidebarOverlay');
-        const menuBtn  = document.getElementById('menuBtn');
+        const sidebar = document.getElementById('sidebar');
+        const shell   = document.getElementById('appShell');
+        const overlay = document.getElementById('sidebarOverlay');
+        const menuBtn = document.getElementById('menuBtn');
         sidebar.classList.remove('sidebar-open');
         shell.classList.remove('sidebar-is-open');
         overlay.classList.remove('active');
         document.body.style.overflow = '';
-        menuBtn.style.display = '';
+        if (menuBtn) { menuBtn.style.opacity = '1'; menuBtn.style.pointerEvents = 'auto'; }
         if (!isMobile()) localStorage.setItem(SIDEBAR_KEY, '0');
     }
 
-    // Restore state on load
     (function() {
         const saved = localStorage.getItem(SIDEBAR_KEY);
-        // Default open on desktop, closed on mobile
-        if (!isMobile() && saved !== '0') {
-            openSidebar();
-        }
+        if (!isMobile() && saved !== '0') openSidebar();
     })();
-
-    // ── Topbar profile menu ──
-    function toggleTopbarProfileMenu() {
-        const menu = document.getElementById('topbarProfileMenu');
-        menu.classList.toggle('open');
-    }
-    document.addEventListener('click', function(e) {
-        const btn  = document.getElementById('topbarProfileBtn');
-        const menu = document.getElementById('topbarProfileMenu');
-        if (btn && menu && !btn.contains(e.target) && !menu.contains(e.target)) {
-            menu.classList.remove('open');
-        }
-    });
     </script>
     {% endif %}
     {% block extra_js %}{% endblock %}

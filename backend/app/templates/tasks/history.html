@@ -1,14 +1,40 @@
 {% extends "base.html" %}
 {% set active_page = 'history' %}
-{% block title %}Task History — PlanAIr{% endblock %}
+{% block title %}Task History: PlanAIr{% endblock %}
 
 {% block content %}
+<!-- ── Page Navbar ── -->
+<nav class="page-navbar" style="margin-bottom:1.75rem;">
+    <a href="{{ url_for('tasks.home') }}" class="page-nav-link home-link">
+        <span class="nav-icon">🏠</span><span class="nav-label">Home</span>
+    </a>
+    <a href="{{ url_for('tasks.todo') }}" class="page-nav-link todo-link">
+        <span class="nav-icon">✅</span><span class="nav-label">To-Do</span>
+    </a>
+    <div class="page-nav-sep"></div>
+    <a href="{{ url_for('tasks.dashboard') }}" class="page-nav-link">
+        <span class="nav-icon">🧠</span><span class="nav-label">Planner</span>
+    </a>
+    <a href="{{ url_for('schedule.schedule_view') }}" class="page-nav-link">
+        <span class="nav-icon">📅</span><span class="nav-label">Today</span>
+    </a>
+    <a href="{{ url_for('schedule.week_view') }}" class="page-nav-link">
+        <span class="nav-icon">🗓</span><span class="nav-label">Week</span>
+    </a>
+    <a href="{{ url_for('insights.insights') }}" class="page-nav-link">
+        <span class="nav-icon">📈</span><span class="nav-label">Insights</span>
+    </a>
+    <a href="{{ url_for('tasks.task_history') }}" class="page-nav-link active">
+        <span class="nav-icon">🕒</span><span class="nav-label">History</span>
+    </a>
+</nav>
+
 <div class="history-container">
 
     <div class="history-header">
         <div>
             <h2>Task History</h2>
-            <p class="text-muted">Every task you've worked on — completed or removed — in one place.</p>
+            <p class="text-muted">Every task you've worked on, completed or removed, in one place.</p>
         </div>
         <div class="history-summary">
             {% set completed_count = entries | selectattr('event_type', 'equalto', 'completed') | list | length %}

@@ -1,16 +1,16 @@
-# PlanAIr 3.0 — Database Schema Notes
+# PlanAIr 3.0: Database Schema Notes
 
 ## Decisions
 - Database: SQLite (dev) → can migrate to PostgreSQL for production
 - ORM: Flask-SQLAlchemy
 - All times stored as TIME objects (not strings)
 - All dates stored as DATE objects (not strings)
-- Passwords hashed via werkzeug — never stored plain
+- Passwords hashed via werkzeug, never stored plain
 - quadrant field on Task is computed + stored on save (not recalculated live)
 
 ---
 
-## Table 1 — users
+## Table 1: users
 Primary table. All other tables FK back to this.
 
 | Column         | Type         | Constraints             | Notes                          |
@@ -33,7 +33,7 @@ Relationships (one-to-many from users):
 
 ---
 
-## Table 2 — busy_hours
+## Table 2: busy_hours
 Stores user's unavailable time blocks.
 Scheduler reads this to find free slots before placing sessions.
 
@@ -51,8 +51,8 @@ User can have multiple blocks per day (e.g. 9–12 and 14–17)
 
 ---
 
-## Table 3 — tasks
-Core task definition. No scheduling data here — that lives in schedule_sessions.
+## Table 3: tasks
+Core task definition. No scheduling data here, that lives in schedule_sessions.
 
 | Column          | Type         | Constraints       | Notes                                    |
 |-----------------|--------------|-------------------|------------------------------------------|
@@ -83,7 +83,7 @@ Status transitions:
 
 ---
 
-## Table 4 — schedule_sessions
+## Table 4: schedule_sessions
 One row per scheduled work block.
 A 6-hour task split across 3 days = 3 rows.
 
@@ -100,11 +100,11 @@ A 6-hour task split across 3 days = 3 rows.
 | completed_at  | DATETIME    | NULLABLE          | set when is_completed → True |
 
 Key rule: sessions are only placed inside free time blocks (not overlapping busy_hours).
-Key rule: no day should be overloaded — max session hours = available free hours that day.
+Key rule: no day should be overloaded, max session hours = available free hours that day.
 
 ---
 
-## Table 5 — productivity_logs
+## Table 5: productivity_logs
 One row per user per day.
 Updated whenever a session checkbox is ticked, or recalculated at end of day.
 
@@ -119,7 +119,7 @@ Updated whenever a session checkbox is ticked, or recalculated at end of day.
 | important_completed | INTEGER | DEFAULT 0                      | sessions from do_now/schedule  |
 | schedule_adherence  | FLOAT   | NULLABLE                       | % sessions done on correct day |
 
-UNIQUE constraint: (user_id, date) — one log per user per day
+UNIQUE constraint: (user_id, date), one log per user per day
 
 Scoring formula (Phase 4):
   base        = (sessions_completed / sessions_total) * 40
@@ -130,8 +130,8 @@ Scoring formula (Phase 4):
 
 ---
 
-## Table 6 — mood_logs
-One row per user per day. Lightweight — just a number and optional note.
+## Table 6: mood_logs
+One row per user per day. Lightweight, just a number and optional note.
 
 | Column     | Type         | Constraints                    | Notes              |
 |------------|--------------|--------------------------------|--------------------|
@@ -141,7 +141,7 @@ One row per user per day. Lightweight — just a number and optional note.
 | mood_score | INTEGER      | NOT NULL                       | 1–5 scale          |
 | note       | VARCHAR(200) | NULLABLE                       | optional free text |
 
-UNIQUE constraint: (user_id, date) — one mood entry per user per day
+UNIQUE constraint: (user_id, date), one mood entry per user per day
 
 Mood → scheduling impact (Phase 4):
   1–2  →  reduce today's workload, suggest deferring low-priority tasks
@@ -150,7 +150,7 @@ Mood → scheduling impact (Phase 4):
 
 ---
 
-## Table 7 — suggestions
+## Table 7: suggestions
 Stores rule-generated suggestions. Persisted so they survive page reloads.
 Dismissed suggestions are kept (is_dismissed=True) for analytics later.
 
@@ -162,7 +162,7 @@ Dismissed suggestions are kept (is_dismissed=True) for analytics later.
 | suggestion_type | VARCHAR(40)  | NOT NULL          | see types below                    |
 | message         | VARCHAR(300) | NOT NULL          | text shown to user                 |
 | is_dismissed    | BOOLEAN      | DEFAULT False     |                                    |
-| related_task_id | INTEGER      | FK → tasks.id     | NULLABLE — if about a specific task|
+| related_task_id | INTEGER      | FK → tasks.id     | NULLABLE, if about a specific task|
 
 Suggestion types:
   'reschedule'     →  task is overdue, suggest moving it

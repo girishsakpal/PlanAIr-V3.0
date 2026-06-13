@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Eisenhower Matrix — PlanAIr{% endblock %}
+{% block title %}Eisenhower Matrix: PlanAIr{% endblock %}
 
 {% block content %}
 <div class="page-header">
@@ -18,7 +18,7 @@
                 <span class="task-hours">{{ task.estimated_hours }}h</span>
             </div>
         </a>
-        {% else %}<p class="matrix-empty">Clear — great work!</p>{% endfor %}
+        {% else %}<p class="matrix-empty">Clear, great work!</p>{% endfor %}
     </div>
 
     <div class="matrix-cell matrix-schedule">

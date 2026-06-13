@@ -1,8 +1,34 @@
 {% extends "base.html" %}
 {% set active_page = 'insights' %}
-{% block title %}Insights — PlanAIr{% endblock %}
+{% block title %}Insights: PlanAIr{% endblock %}
 
 {% block content %}
+<!-- ── Page Navbar ── -->
+<nav class="page-navbar" style="margin-bottom:1.75rem;">
+    <a href="{{ url_for('tasks.home') }}" class="page-nav-link home-link">
+        <span class="nav-icon">🏠</span><span class="nav-label">Home</span>
+    </a>
+    <a href="{{ url_for('tasks.todo') }}" class="page-nav-link todo-link">
+        <span class="nav-icon">✅</span><span class="nav-label">To-Do</span>
+    </a>
+    <div class="page-nav-sep"></div>
+    <a href="{{ url_for('tasks.dashboard') }}" class="page-nav-link">
+        <span class="nav-icon">🧠</span><span class="nav-label">Planner</span>
+    </a>
+    <a href="{{ url_for('schedule.schedule_view') }}" class="page-nav-link">
+        <span class="nav-icon">📅</span><span class="nav-label">Today</span>
+    </a>
+    <a href="{{ url_for('schedule.week_view') }}" class="page-nav-link">
+        <span class="nav-icon">🗓</span><span class="nav-label">Week</span>
+    </a>
+    <a href="{{ url_for('insights.insights') }}" class="page-nav-link active">
+        <span class="nav-icon">📈</span><span class="nav-label">Insights</span>
+    </a>
+    <a href="{{ url_for('tasks.task_history') }}" class="page-nav-link">
+        <span class="nav-icon">🕒</span><span class="nav-label">History</span>
+    </a>
+</nav>
+
 
 <!-- summary banner -->
 <div class="insights-summary-banner">

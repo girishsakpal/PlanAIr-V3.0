@@ -1,17 +1,25 @@
 {% extends "base.html" %}
 {% set active_page = 'todo' %}
-{% block title %}To-Do List — PlanAIr{% endblock %}
+{% block title %}To-Do List: PlanAIr{% endblock %}
 
 {% block extra_css %}
 <style>
-/* ── break out for full-bleed header ── */
+/* ── break out for full-bleed header: only affects content below navbar ── */
 .todo-main {
     margin: -2rem -2.5rem 0;
 }
 @media (max-width: 768px) { .todo-main { margin: -1.25rem -1rem 0; } }
 
+/* keep navbar wrapper inside normal padding */
+.todo-main .todo-nav-wrap {
+    padding: 1.25rem 3rem 0;
+    background: var(--bg);
+    margin: 0;
+}
+@media (max-width: 768px) { .todo-main .todo-nav-wrap { padding: 1rem 1.25rem 0; } }
+
 /* ═══════════════════════════════════════════════
-   HEADER BANNER  — matches app's neon dark theme
+   HEADER BANNER: matches app's neon dark theme
 ═══════════════════════════════════════════════ */
 .todo-header {
     background: linear-gradient(135deg, #060d1f 0%, #0a1628 40%, #0d1f40 75%, #0f2448 100%);
@@ -424,6 +432,22 @@
 
 {% block content %}
 <div class="todo-main">
+
+    <!-- ── Page Navbar ── -->
+    <div class="todo-nav-wrap">
+        <nav class="page-navbar">
+            <a href="{{ url_for('tasks.home') }}" class="page-nav-link home-link">
+                <span class="nav-icon">🏠</span><span class="nav-label">Home</span>
+            </a>
+            <div class="page-nav-sep"></div>
+            <a href="{{ url_for('tasks.dashboard') }}" class="page-nav-link">
+                <span class="nav-icon">🧠</span><span class="nav-label">Smart Planner</span>
+            </a>
+            <a href="{{ url_for('tasks.todo') }}" class="page-nav-link todo-link active">
+                <span class="nav-icon">✅</span><span class="nav-label">To-Do List</span>
+            </a>
+        </nav>
+    </div>
 
     <!-- ── Header ── -->
     <div class="todo-header">
